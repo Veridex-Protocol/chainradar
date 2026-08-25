@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import asyncio
 import json
+import sys
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Optional
@@ -291,45 +292,225 @@ def run_scan(
 def list_candidates(
     state: Optional[str] = typer.Option(None, "--state", "-s", help="Filter by state: HOT, QUALIFIED, RADAR"),
     search: Optional[str] = typer.Option(None, "--search", "-q", help="Search query string"),
+    stack: Optional[str] = typer.Option(None, "--stack", help="Filter by stack family: evm, cosmos, substrate, svm"),
+    africa: Optional[str] = typer.Option(None, "--africa", help="Filter by Africa label: A1, A2, A3, A4"),
+    page_size: int = typer.Option(25, "--page-size", "-n", help="Rows per page"),
+    page: int = typer.Option(1, "--page", "-p", help="Page number to display"),
+    verified_only: bool = typer.Option(False, "--verified", help="Show only RPC-verified chains"),
+    interactive: bool = typer.Option(
+        True, "--interactive/--no-interactive", help="Page through results with n/p keys"
+    ),
 ):
-    """List discovered blockchain candidates with scores and Africa classification."""
+    """List discovered candidates with scores, activity, funding and Africa classification.
+
+    Results are ranked by outreach score. Use n/p to page through them, or
+    --page / --no-interactive for scripted output.
+    """
+    async def _render_page(session, page_number: int, total: int) -> int:
+        repo = Repository(session)
+
+        africa_filter = None
+        if africa:
+            africa_map = {
+                "A1": "A1_explicit_intent",
+                "A2": "A2_active_regional_motion",
+                "A3": "A3_africa_compatible",
+                "A4": "A4_no_evidence",
+                "A5": "A5_already_covered",
+            }
+            africa_filter = africa_map.get(africa.upper(), africa)
+
+        total_pages = max(1, (total + page_size - 1) // page_size)
+        page_number = max(1, min(page_number, total_pages))
+        offset = (page_number - 1) * page_size
+
+        candidates = await repo.list_candidates(
+            state=state.upper() if state else None,
+            stack_family=stack.lower() if stack else None,
+            africa_intent=africa_filter,
+            search_query=search,
+            limit=page_size,
+            offset=offset,
+            verified_only=verified_only,
+        )
+
+        table = Table(
+            title=(
+                f"🔗 ChainRadar — page {page_number}/{total_pages} "
+                f"(showing {offset + 1}-{min(offset + page_size, total)} of {total:,})"
+            ),
+            expand=True,
+            show_lines=False,
+            border_style="dim cyan",
+        )
+        table.add_column("#", style="dim", width=5, justify="right")
+        table.add_column("Chain Name", style="bold white", max_width=26, no_wrap=True)
+        table.add_column("Chain ID", style="cyan", width=9, justify="right")
+        table.add_column("Stack", style="blue", width=8)
+        table.add_column("Stage", style="magenta", width=12)
+        table.add_column("Africa", width=6, justify="center")
+        table.add_column("Activity", width=9, justify="center")
+        table.add_column("First Seen", style="dim", width=10)
+        table.add_column("Verified", style="dim", width=10)
+        table.add_column("Outreach", justify="right", style="bold red", width=8)
+        table.add_column("Radar", justify="right", style="cyan", width=6)
+        table.add_column("State", justify="center", width=9)
+
+        stage_map = {
+            "S0_research_hint": "S0 Research",
+            "S1_devnet_prototype": "S1 Devnet",
+            "S2_public_testnet": "S2 Testnet",
+            "S3_incentivized_testnet": "S3 Incent.",
+            "S4_mainnet_announced": "S4 Announced",
+            "S5_early_mainnet": "S5 Mainnet",
+            "S6_established_archived": "S6 Establ.",
+        }
+        activity_style = {
+            "active": ("bold green", "● active"),
+            "slowing": ("yellow", "◐ slowing"),
+            "dormant": ("dim red", "○ dormant"),
+            "dead": ("red", "✗ dead"),
+            "unknown": ("dim", "? unknown"),
+        }
+
+        for idx, c in enumerate(candidates, offset + 1):
+            a_label = c.assessment.intent_label if c.assessment else "A4_no_evidence"
+            a_short = a_label.split("_")[0]
+            a_color = {
+                "A1": "bold red", "A2": "yellow", "A3": "blue", "A5": "magenta"
+            }.get(a_short, "dim")
+
+            outreach = c.score.outreach_score if c.score else 0.0
+            radar = c.score.radar_score if c.score else 0.0
+            state_val = c.score.state if c.score else "—"
+            state_c = {
+                "HOT": "bold red", "QUALIFIED": "bold yellow", "STALE": "dim", "REJECT": "dim red"
+            }.get(state_val, "cyan")
+
+            chain_id = next(
+                (n.human_chain_id for n in (c.networks or []) if n.human_chain_id), "—"
+            )
+
+            # Activity rank based on real evidence: observations, networks, RPC verification
+            obs_count = len(c.observation_links) if c.observation_links else 0
+            net_count = len(c.networks) if c.networks else 0
+            has_rpc = any(n.rpc_urls for n in (c.networks or []))
+            has_explorer = any(n.explorer_urls for n in (c.networks or []))
+            is_verified = bool(c.last_verified_at)
+
+            # Compute an activity score from 0-5 based on concrete signals
+            activity_pts = min(obs_count, 2)  # 0-2 pts for evidence
+            activity_pts += min(net_count, 1)  # 0-1 pts for networks
+            activity_pts += (1 if has_rpc else 0)  # 1 pt for having RPC endpoints
+            activity_pts += (1 if is_verified else 0)  # 1 pt for verified liveness
+
+            if activity_pts >= 4:
+                v_style, v_text = "bold green", "●●● high"
+            elif activity_pts >= 3:
+                v_style, v_text = "green", "●●○ med"
+            elif activity_pts >= 2:
+                v_style, v_text = "yellow", "●○○ low"
+            elif activity_pts >= 1:
+                v_style, v_text = "dim yellow", "○○○ min"
+            else:
+                v_style, v_text = "dim", "—   none"
+
+            # Dates: first seen + last verified (more useful than funding until enrichment runs)
+            first_seen = c.first_seen_at.strftime("%Y-%m-%d") if c.first_seen_at else "—"
+            verified_at = c.last_verified_at.strftime("%Y-%m-%d") if c.last_verified_at else "—"
+
+            table.add_row(
+                str(idx),
+                c.canonical_name[:26],
+                str(chain_id)[:9],
+                (c.stack_family or "").upper(),
+                stage_map.get(c.stage, c.stage or "—"),
+                f"[{a_color}]{a_short}[/{a_color}]",
+                f"[{v_style}]{v_text}[/{v_style}]",
+                first_seen,
+                verified_at,
+                f"{outreach:.0f}",
+                f"{radar:.0f}",
+                f"[{state_c}]{state_val}[/{state_c}]",
+            )
+
+        console.print(table)
+        return page_number
+
     async def _list():
         async with db_manager.session() as session:
             repo = Repository(session)
-            candidates = await repo.list_candidates(
+            africa_filter = None
+            if africa:
+                africa_map = {
+                    "A1": "A1_explicit_intent", "A2": "A2_active_regional_motion",
+                    "A3": "A3_africa_compatible", "A4": "A4_no_evidence",
+                    "A5": "A5_already_covered",
+                }
+                africa_filter = africa_map.get(africa.upper(), africa)
+
+            total = await repo.count_candidates(
                 state=state.upper() if state else None,
+                stack_family=stack.lower() if stack else None,
+                africa_intent=africa_filter,
                 search_query=search,
-                limit=50,
+                verified_only=verified_only,
             )
+            if total == 0:
+                console.print("[yellow]No candidates match those filters.[/yellow]")
+                return
 
-            table = Table(title="Live Blockchain Candidates", expand=True)
-            table.add_column("Name", style="bold white")
-            table.add_column("Stage", style="magenta")
-            table.add_column("Stack", style="blue")
-            table.add_column("Africa Label")
-            table.add_column("Outreach", justify="right", style="bold red")
-            table.add_column("Radar", justify="right", style="cyan")
-            table.add_column("State", justify="center")
+            total_pages = max(1, (total + page_size - 1) // page_size)
+            current = await _render_page(session, page, total)
 
-            for c in candidates:
-                a_label = c.assessment.intent_label if c.assessment else "A4"
-                a_color = "red" if a_label.startswith("A1") else ("yellow" if a_label.startswith("A2") else "dim cyan")
-                state_c = "bold red" if c.score and c.score.state == "HOT" else ("bold yellow" if c.score and c.score.state == "QUALIFIED" else "cyan")
-                outreach_score = c.score.outreach_score if c.score else 0.0
-                radar_score = c.score.radar_score if c.score else 0.0
-                state_val = c.score.state if c.score else "RADAR"
-
-                table.add_row(
-                    c.canonical_name,
-                    c.stage,
-                    f"{c.stack_family.upper()}",
-                    f"[{a_color}]{a_label}[/{a_color}]",
-                    f"{outreach_score:.0f}",
-                    f"{radar_score:.0f}",
-                    f"[{state_c}]{state_val}[/{state_c}]",
+            if not (interactive and sys.stdin.isatty()):
+                console.print(
+                    f"[dim]Page {current}/{total_pages}. "
+                    f"Use --page N to jump, or drop --no-interactive to browse.[/dim]"
                 )
+                return
 
-            console.print(table)
+            while True:
+                console.print(
+                    f"[dim]([bold]n[/bold])ext  ([bold]p[/bold])rev  "
+                    f"([bold]f[/bold])irst  ([bold]l[/bold])ast  "
+                    f"([bold]g[/bold])oto  ([bold]q[/bold])uit   —  page {current}/{total_pages}[/dim]"
+                )
+                try:
+                    key = console.input("> ").strip().lower()
+                except (EOFError, KeyboardInterrupt):
+                    console.print()
+                    return
+
+                if key in ("q", "quit", "exit"):
+                    return
+                if key in ("n", "next", ""):
+                    if current >= total_pages:
+                        console.print("[yellow]Already on the last page.[/yellow]")
+                        continue
+                    current += 1
+                elif key in ("p", "prev", "previous", "b"):
+                    if current <= 1:
+                        console.print("[yellow]Already on the first page.[/yellow]")
+                        continue
+                    current -= 1
+                elif key in ("f", "first"):
+                    current = 1
+                elif key in ("l", "last"):
+                    current = total_pages
+                elif key.startswith("g"):
+                    raw = key[1:].strip() or console.input("Go to page: ").strip()
+                    if not raw.isdigit():
+                        console.print("[yellow]Enter a page number.[/yellow]")
+                        continue
+                    current = max(1, min(int(raw), total_pages))
+                elif key.isdigit():
+                    current = max(1, min(int(key), total_pages))
+                else:
+                    console.print("[yellow]Unrecognized key.[/yellow]")
+                    continue
+
+                current = await _render_page(session, current, total)
 
     asyncio.run(_list())
 

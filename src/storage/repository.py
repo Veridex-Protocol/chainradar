@@ -278,6 +278,7 @@ class Repository:
         search_query: Optional[str] = None,
         limit: int = 50,
         offset: int = 0,
+        verified_only: bool = False,
     ) -> List[ChainProduct]:
         stmt = (
             select(ChainProduct)
@@ -290,7 +291,10 @@ class Repository:
                 selectinload(ChainProduct.opportunities),
                 selectinload(ChainProduct.contacts),
             )
-            .outerjoin(ScoreSnapshot, ScoreSnapshot.candidate_id == ChainProduct.id)
+            # Join the CURRENT snapshot, not the history. Score snapshots are
+            # append-only, so joining on candidate_id multiplies each candidate
+            # by its number of rescores and sorts on an arbitrary old score.
+            .outerjoin(ScoreSnapshot, ScoreSnapshot.id == ChainProduct.current_score_id)
             .outerjoin(AfricaAssessment, AfricaAssessment.candidate_id == ChainProduct.id)
         )
         if state:
@@ -309,11 +313,54 @@ class Repository:
                     func.lower(ChainProduct.slug).like(sq),
                 )
             )
+        if verified_only:
+            stmt = stmt.where(ChainProduct.last_verified_at.isnot(None))
 
-        stmt = stmt.order_by(desc(ScoreSnapshot.outreach_score), desc(ChainProduct.first_seen_at))
+        # NULLS LAST so unscored candidates never outrank scored ones.
+        stmt = stmt.order_by(
+            desc(ScoreSnapshot.outreach_score).nullslast(),
+            desc(ScoreSnapshot.radar_score).nullslast(),
+            desc(ChainProduct.first_seen_at),
+        )
         stmt = stmt.limit(limit).offset(offset)
         result = await self.session.execute(stmt)
-        return list(result.scalars().all())
+        return list(result.scalars().unique().all())
+
+    async def count_candidates(
+        self,
+        state: Optional[str] = None,
+        workflow_state: Optional[str] = None,
+        africa_intent: Optional[str] = None,
+        stack_family: Optional[str] = None,
+        search_query: Optional[str] = None,
+        verified_only: bool = False,
+    ) -> int:
+        """Total matching candidates, for pagination."""
+        stmt = (
+            select(func.count(func.distinct(ChainProduct.id)))
+            .select_from(ChainProduct)
+            .outerjoin(ScoreSnapshot, ScoreSnapshot.id == ChainProduct.current_score_id)
+            .outerjoin(AfricaAssessment, AfricaAssessment.candidate_id == ChainProduct.id)
+        )
+        if state:
+            stmt = stmt.where(ScoreSnapshot.state == state)
+        if workflow_state:
+            stmt = stmt.where(ScoreSnapshot.workflow_state == workflow_state)
+        if africa_intent:
+            stmt = stmt.where(AfricaAssessment.intent_label == africa_intent)
+        if stack_family:
+            stmt = stmt.where(ChainProduct.stack_family == stack_family)
+        if search_query:
+            sq = f"%{search_query.lower()}%"
+            stmt = stmt.where(
+                or_(
+                    func.lower(ChainProduct.canonical_name).like(sq),
+                    func.lower(ChainProduct.slug).like(sq),
+                )
+            )
+        if verified_only:
+            stmt = stmt.where(ChainProduct.last_verified_at.isnot(None))
+        return int(await self.session.scalar(stmt) or 0)
 
     # --------------------------------------------------------------------------
     # Contacts & Privacy Suppression Operations
