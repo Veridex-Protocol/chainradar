@@ -1,0 +1,46 @@
+{
+  "regions": {
+    "West Africa": ["Benin", "Burkina Faso", "Cabo Verde", "Cote d'Ivoire", "Gambia", "Ghana", "Guinea", "Guinea-Bissau", "Liberia", "Mali", "Mauritania", "Niger", "Nigeria", "Senegal", "Sierra Leone", "Togo"],
+    "East Africa": ["Burundi", "Comoros", "Djibouti", "Eritrea", "Ethiopia", "Kenya", "Madagascar", "Malawi", "Mauritius", "Mozambique", "Rwanda", "Seychelles", "Somalia", "South Sudan", "Tanzania", "Uganda", "Zambia", "Zimbabwe"],
+    "North Africa": ["Algeria", "Egypt", "Libya", "Morocco", "Sudan", "Tunisia"],
+    "Central Africa": ["Cameroon", "Central African Republic", "Chad", "Congo (Democratic Republic)", "Congo (Republic)", "Equatorial Guinea", "Gabon", "Sao Tome and Principe"],
+    "Southern Africa": ["Angola", "Botswana", "Eswatini", "Lesotho", "Namibia", "South Africa"],
+    "Sub-Saharan Africa": ["Benin", "Burkina Faso", "Cabo Verde", "Cote d'Ivoire", "Gambia", "Ghana", "Guinea", "Guinea-Bissau", "Liberia", "Mali", "Niger", "Nigeria", "Senegal", "Sierra Leone", "Togo", "Burundi", "Comoros", "Djibouti", "Eritrea", "Ethiopia", "Kenya", "Madagascar", "Malawi", "Mauritius", "Mozambique", "Rwanda", "Seychelles", "Somalia", "South Sudan", "Tanzania", "Uganda", "Zambia", "Zimbabwe", "Cameroon", "Central African Republic", "Chad", "Congo (Democratic Republic)", "Congo (Republic)", "Equatorial Guinea", "Gabon", "Sao Tome and Principe", "Angola", "Botswana", "Eswatini", "Lesotho", "Namibia", "South Africa"],
+    "Francophone Africa": ["Benin", "Burkina Faso", "Burundi", "Cameroon", "Central African Republic", "Chad", "Comoros", "Congo (Democratic Republic)", "Congo (Republic)", "Cote d'Ivoire", "Djibouti", "Equatorial Guinea", "Gabon", "Guinea", "Madagascar", "Mali", "Mauritania", "Mauritius", "Niger", "Rwanda", "Senegal", "Seychelles", "Togo"],
+    "Lusophone Africa": ["Angola", "Cabo Verde", "Guinea-Bissau", "Mozambique", "Sao Tome and Principe", "Equatorial Guinea"]
+  },
+  "economic_blocs": {
+    "AfCFTA": {
+      "name": "African Continental Free Trade Area",
+      "aliases": ["AfCFTA", "ZLECAf"]
+    },
+    "AU": {
+      "name": "African Union",
+      "aliases": ["AU", "African Union", "Union Africaine", "UA"]
+    },
+    "ECOWAS": {
+      "name": "Economic Community of West African States",
+      "aliases": ["ECOWAS", "CEDEAO"]
+    },
+    "EAC": {
+      "name": "East African Community",
+      "aliases": ["EAC"]
+    },
+    "SADC": {
+      "name": "Southern African Development Community",
+      "aliases": ["SADC"]
+    },
+    "COMESA": {
+      "name": "Common Market for Eastern and Southern Africa",
+      "aliases": ["COMESA"]
+    },
+    "WAEMU": {
+      "name": "West African Economic and Monetary Union",
+      "aliases": ["WAEMU", "UEMOA"]
+    },
+    "CEMAC": {
+      "name": "Central African Economic and Monetary Community",
+      "aliases": ["CEMAC"]
+    }
+  }
+}

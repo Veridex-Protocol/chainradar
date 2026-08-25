@@ -1,0 +1,82 @@
+query_packs:
+  github:
+    - name: "new_blockchain_repos"
+      query: "testnet in:name,description,readme topic:blockchain created:>={DATE} archived:false fork:false"
+      window_hours: 72
+      cadence_minutes: 30
+
+    - name: "rollups_appchains"
+      query: "(rollup OR appchain OR hyperchain) in:name,description,readme created:>={DATE} archived:false fork:false"
+      window_hours: 72
+      cadence_minutes: 30
+
+    - name: "launch_intent"
+      query: "(mainnet OR devnet OR genesis) in:readme pushed:>={DATE} archived:false fork:false"
+      window_hours: 72
+      cadence_minutes: 30
+
+    - name: "evm_configs"
+      query: "(chainId OR eth_chainId) (testnet OR mainnet) in:readme pushed:>={DATE}"
+      window_hours: 72
+      cadence_minutes: 30
+
+    - name: "cosmos"
+      query: "(cosmos-sdk OR cometbft) (testnet OR genesis) in:readme pushed:>={DATE}"
+      window_hours: 72
+      cadence_minutes: 30
+
+    - name: "substrate"
+      query: "(polkadot-sdk OR substrate OR parachain) (testnet OR chain-spec) in:readme pushed:>={DATE}"
+      window_hours: 72
+      cadence_minutes: 30
+
+    - name: "svm_move_cairo_fuel"
+      query: "(SVM OR Move OR Cairo OR FuelVM) (testnet OR mainnet OR chain) in:readme pushed:>={DATE}"
+      window_hours: 72
+      cadence_minutes: 30
+
+    - name: "africa_intent"
+      query: "(Africa OR Nigeria OR Kenya OR Ghana OR Rwanda) (blockchain OR rollup OR chain) in:readme pushed:>={DATE}"
+      window_hours: 72
+      cadence_minutes: 30
+
+  web_news:
+    - name: "lifecycle"
+      query: '"public testnet" (blockchain OR rollup OR appchain OR "layer 1" OR "layer 2")'
+      cadence: "15 */2 * * *"
+
+    - name: "incentive"
+      query: '("incentivized testnet" OR "genesis validator" OR "validator onboarding") blockchain'
+      cadence: "15 */2 * * *"
+
+    - name: "launch"
+      query: '("mainnet launch" OR "mainnet beta" OR "mainnet goes live") (chain OR network OR rollup)'
+      cadence: "15 */2 * * *"
+
+    - name: "infrastructure"
+      query: '("now supports" OR "added support") (testnet OR mainnet) (RPC OR explorer OR indexer OR bridge OR oracle)'
+      cadence: "15 */2 * * *"
+
+    - name: "raas"
+      query: '("OP Stack" OR "Arbitrum Orbit" OR "ZK Stack" OR "Polygon CDK") (launch OR testnet OR mainnet)'
+      cadence: "15 */2 * * *"
+
+    - name: "non_evm"
+      query: '("Cosmos SDK" OR CometBFT OR Substrate OR "Polkadot SDK" OR SVM OR Move OR Cairo OR FuelVM) (testnet OR mainnet)'
+      cadence: "15 */2 * * *"
+
+    - name: "program"
+      query: '(ambassador OR grants OR hackathon OR community OR DevRel) (testnet OR blockchain OR rollup)'
+      cadence: "15 */2 * * *"
+
+    - name: "security"
+      query: '(audit OR "bug bounty") (mainnet OR testnet) blockchain'
+      cadence: "15 */2 * * *"
+
+    - name: "africa_explicit"
+      query: '(Africa OR Nigeria OR Kenya OR Ghana OR Rwanda) (expand OR launch OR "market entry") (blockchain OR network OR rollup)'
+      cadence: "15 */2 * * *"
+
+    - name: "africa_jobs"
+      query: 'site:boards.greenhouse.io OR site:jobs.lever.co OR site:jobs.ashbyhq.com (Africa OR Nigeria OR Kenya) (web3 OR blockchain)'
+      cadence: "40 */6 * * *"

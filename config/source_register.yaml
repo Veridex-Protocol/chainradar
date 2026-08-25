@@ -1,0 +1,240 @@
+sources:
+  - source_id: "ethereum_lists"
+    name: "ethereum-lists/chains"
+    family: "registry"
+    tier: "A"
+    owner: "ethereum-lists"
+    terms_url: "https://github.com/ethereum-lists/chains/blob/master/LICENSE"
+    access_method: "github_api_and_raw"
+    fields_stored: ["name", "chainId", "shortName", "rpc", "explorers", "nativeCurrency", "parent", "status"]
+    retention_days: 365
+    rate_limit:
+      requests_per_minute: 60
+      burst: 10
+    kill_switch: false
+    reliability: 0.90
+    cadence: "*/10 * * * *"
+
+  - source_id: "chainid_network"
+    name: "chainid.network aggregated JSON"
+    family: "registry"
+    tier: "A"
+    owner: "chainid.network"
+    terms_url: "https://chainid.network"
+    access_method: "http_get"
+    fields_stored: ["chainId", "name", "rpc", "faucets", "nativeCurrency", "infoURL"]
+    retention_days: 365
+    rate_limit:
+      requests_per_minute: 10
+      burst: 2
+    kill_switch: false
+    reliability: 0.88
+    cadence: "3,18,33,48 * * * *"
+
+  - source_id: "superchain_registry"
+    name: "Optimism Superchain Registry"
+    family: "registry"
+    tier: "A"
+    owner: "ethereum-optimism"
+    terms_url: "https://github.com/ethereum-optimism/superchain-registry"
+    access_method: "github_api_and_raw"
+    fields_stored: ["chain_id", "name", "rpc_endpoints", "genesis", "superchain_level"]
+    retention_days: 365
+    rate_limit:
+      requests_per_minute: 30
+      burst: 5
+    kill_switch: false
+    reliability: 0.95
+    cadence: "*/10 * * * *"
+
+  - source_id: "cosmos_chain_registry"
+    name: "Cosmos Chain Registry"
+    family: "registry"
+    tier: "A"
+    owner: "cosmos"
+    terms_url: "https://github.com/cosmos/chain-registry"
+    access_method: "github_api_and_raw"
+    fields_stored: ["chain_name", "chain_id", "status", "network_type", "apis", "explorers", "codebase"]
+    retention_days: 365
+    rate_limit:
+      requests_per_minute: 40
+      burst: 5
+    kill_switch: false
+    reliability: 0.92
+    cadence: "*/10 * * * *"
+
+  - source_id: "blockscout_chainscout"
+    name: "Blockscout Chainscout"
+    family: "registry"
+    tier: "B"
+    owner: "blockscout"
+    terms_url: "https://github.com/blockscout/chainscout-chains-list"
+    access_method: "github_api_and_raw"
+    fields_stored: ["name", "chainId", "rpcUrl", "explorerUrl"]
+    retention_days: 365
+    rate_limit:
+      requests_per_minute: 30
+      burst: 5
+    kill_switch: false
+    reliability: 0.85
+    cadence: "*/30 * * * *"
+
+  - source_id: "hyperlane_registry"
+    name: "Hyperlane Registry"
+    family: "registry"
+    tier: "B"
+    owner: "hyperlane-xyz"
+    terms_url: "https://github.com/hyperlane-xyz/hyperlane-registry"
+    access_method: "github_api_and_raw"
+    fields_stored: ["chainId", "displayName", "protocol", "rpcUrls", "blocks"]
+    retention_days: 365
+    rate_limit:
+      requests_per_minute: 30
+      burst: 5
+    kill_switch: false
+    reliability: 0.88
+    cadence: "*/15 * * * *"
+
+  - source_id: "axelar_configs"
+    name: "Axelar Configs"
+    family: "registry"
+    tier: "B"
+    owner: "axelarnetwork"
+    terms_url: "https://github.com/axelarnetwork/axelar-configs"
+    access_method: "github_api_and_raw"
+    fields_stored: ["id", "name", "chainType", "rpc", "nativeCurrency"]
+    retention_days: 365
+    rate_limit:
+      requests_per_minute: 30
+      burst: 5
+    kill_switch: false
+    reliability: 0.85
+    cadence: "*/30 * * * *"
+
+  - source_id: "caip_namespaces"
+    name: "Chain Agnostic Namespaces & SLIP-0044"
+    family: "registry"
+    tier: "A"
+    owner: "ChainAgnostic"
+    terms_url: "https://github.com/ChainAgnostic/namespaces"
+    access_method: "github_api"
+    fields_stored: ["namespace", "description", "references"]
+    retention_days: 365
+    rate_limit:
+      requests_per_minute: 20
+      burst: 3
+    kill_switch: false
+    reliability: 0.90
+    cadence: "0 */6 * * *"
+
+  - source_id: "github_hyper_search"
+    name: "GitHub Repository & Code Hyper-Search"
+    family: "code"
+    tier: "A"
+    owner: "GitHub"
+    terms_url: "https://docs.github.com/en/site-policy/github-terms/github-terms-of-service"
+    access_method: "github_search_api"
+    fields_stored: ["repo_full_name", "description", "pushed_at", "topics", "readme_excerpt", "matched_query"]
+    retention_days: 365
+    rate_limit:
+      requests_per_minute: 30
+      burst: 5
+    kill_switch: false
+    reliability: 0.80
+    cadence: "7,37 * * * *"
+
+  - source_id: "rss_sitemaps"
+    name: "Official RSS Feeds & Sitemaps"
+    family: "web"
+    tier: "A"
+    owner: "Project Websites"
+    terms_url: "Public domain / standard RSS"
+    access_method: "http_get_conditional"
+    fields_stored: ["title", "link", "published", "summary", "etag"]
+    retention_days: 365
+    rate_limit:
+      requests_per_minute: 60
+      burst: 10
+    kill_switch: false
+    reliability: 0.85
+    cadence: "*/15 * * * *"
+
+  - source_id: "raas_provider_blogs"
+    name: "RaaS and Infra Provider Blogs (Conduit, Caldera, Gelato, AltLayer)"
+    family: "web"
+    tier: "B"
+    owner: "Infrastructure Providers"
+    terms_url: "Public blogs"
+    access_method: "rss_http"
+    fields_stored: ["title", "link", "published", "content_snippet"]
+    retention_days: 365
+    rate_limit:
+      requests_per_minute: 20
+      burst: 5
+    kill_switch: false
+    reliability: 0.85
+    cadence: "25 */2 * * *"
+
+  - source_id: "ats_greenhouse"
+    name: "Greenhouse Public Job Boards"
+    family: "careers"
+    tier: "C"
+    owner: "Greenhouse Software"
+    terms_url: "https://support.greenhouse.io"
+    access_method: "http_get_json"
+    fields_stored: ["title", "location", "department", "updated_at", "url"]
+    retention_days: 90
+    rate_limit:
+      requests_per_minute: 30
+      burst: 5
+    kill_switch: false
+    reliability: 0.80
+    cadence: "40 */6 * * *"
+
+  - source_id: "ats_lever"
+    name: "Lever Public Postings API"
+    family: "careers"
+    tier: "C"
+    owner: "Lever"
+    terms_url: "https://github.com/lever/postings-api"
+    access_method: "http_get_json"
+    fields_stored: ["text", "categories", "createdAt", "hostedUrl"]
+    retention_days: 90
+    rate_limit:
+      requests_per_minute: 30
+      burst: 5
+    kill_switch: false
+    reliability: 0.80
+    cadence: "40 */6 * * *"
+
+  - source_id: "ats_ashby"
+    name: "Ashby Public Job Postings API"
+    family: "careers"
+    tier: "C"
+    owner: "Ashby"
+    terms_url: "https://developers.ashbyhq.com"
+    access_method: "http_get_json"
+    fields_stored: ["title", "department", "locationName", "publishedAt", "jobUrl"]
+    retention_days: 90
+    rate_limit:
+      requests_per_minute: 30
+      burst: 5
+    kill_switch: false
+    reliability: 0.80
+    cadence: "40 */6 * * *"
+
+  - source_id: "bluesky_jetstream"
+    name: "Bluesky Jetstream Public Firehose"
+    family: "social"
+    tier: "D"
+    owner: "Bluesky PBLLC"
+    terms_url: "https://docs.bsky.app"
+    access_method: "websocket_or_filtered_stream"
+    fields_stored: ["post_uri", "author_did", "text_excerpt", "created_at"]
+    retention_days: 30
+    rate_limit:
+      requests_per_minute: 120
+      burst: 20
+    kill_switch: false
+    reliability: 0.50
+    cadence: "continuous"

@@ -1,0 +1,304 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Ashinity | Early Chain Discovery & Africa Expansion Engine</title>
+  <!-- Google Fonts: Outfit & JetBrains Mono -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&family=Outfit:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+  <div class="app-layout">
+    <!-- Sidebar Navigation -->
+    <aside class="sidebar">
+      <div class="brand">
+        <div class="brand-logo">
+          <div class="radar-dot"></div>
+        </div>
+        <div class="brand-text">
+          <h1>ASHINITY</h1>
+          <span class="badge-sub">CHAIN DISCOVERY & AFRICA INTEL</span>
+        </div>
+      </div>
+
+      <nav class="nav-menu">
+        <button class="nav-btn active" data-tab="hot-queue">
+          <span class="icon">🔥</span>
+          <span>HOT Alerts</span>
+          <span class="badge badge-hot" id="badge-hot-count">0</span>
+        </button>
+        <button class="nav-btn" data-tab="qualified-queue">
+          <span class="icon">🎯</span>
+          <span>Qualified Leads</span>
+          <span class="badge badge-qual" id="badge-qual-count">0</span>
+        </button>
+        <button class="nav-btn" data-tab="radar-queue">
+          <span class="icon">📡</span>
+          <span>Radar Watchlist</span>
+          <span class="badge badge-radar" id="badge-radar-count">0</span>
+        </button>
+        <button class="nav-btn" data-tab="africa-matrix">
+          <span class="icon">🌍</span>
+          <span>Africa Matrix</span>
+        </button>
+        <button class="nav-btn" data-tab="verifier-view">
+          <span class="icon">⚡</span>
+          <span>Verifier Console</span>
+        </button>
+        <button class="nav-btn" data-tab="sources-view">
+          <span class="icon">⚙️</span>
+          <span>Source Register</span>
+        </button>
+        <button class="nav-btn" data-tab="digests-view">
+          <span class="icon">📰</span>
+          <span>Digests & Briefs</span>
+        </button>
+      </nav>
+
+      <div class="sidebar-footer">
+        <div class="wat-clock">
+          <span class="clock-label">AFRICA / LAGOS (WAT)</span>
+          <span class="clock-time" id="wat-clock-display">--:--:--</span>
+        </div>
+        <div class="engine-status">
+          <span class="status-indicator live"></span>
+          <span>Engine Active (v1.0)</span>
+        </div>
+      </div>
+    </aside>
+
+    <!-- Main Content Arena -->
+    <main class="main-content">
+      <!-- Topbar Header -->
+      <header class="topbar">
+        <div class="search-bar">
+          <span class="search-icon">🔍</span>
+          <input type="text" id="global-search" placeholder="Search candidate chains by name, stack, or country...">
+        </div>
+
+        <div class="topbar-actions">
+          <div class="filter-group">
+            <select id="filter-stack">
+              <option value="">All Stacks</option>
+              <option value="evm">EVM</option>
+              <option value="cosmos">Cosmos</option>
+              <option value="substrate">Substrate</option>
+              <option value="svm">SVM</option>
+              <option value="starknet">Starknet</option>
+              <option value="move">Move</option>
+              <option value="fuel">Fuel</option>
+            </select>
+
+            <select id="filter-africa">
+              <option value="">All Africa Labels</option>
+              <option value="A1_explicit_intent">A1 - Explicit Intent</option>
+              <option value="A2_active_regional_motion">A2 - Regional Motion</option>
+              <option value="A3_africa_compatible">A3 - Africa Compatible</option>
+              <option value="A4_no_evidence">A4 - No Evidence</option>
+              <option value="A5_already_covered">A5 - Already Covered</option>
+            </select>
+          </div>
+
+          <button class="btn btn-secondary" id="btn-refresh">🔄 Refresh</button>
+          <button class="btn btn-primary" id="btn-generate-digest">📄 Generate Digest</button>
+        </div>
+      </header>
+
+      <!-- KPI Summary Cards -->
+      <section class="kpi-grid">
+        <div class="kpi-card hot-kpi">
+          <div class="kpi-header">
+            <span>🔥 HOT ALERTS</span>
+            <span class="kpi-sub">Outreach Priority ≥ 70</span>
+          </div>
+          <div class="kpi-value" id="kpi-hot-val">0</div>
+          <div class="kpi-bar"><div class="fill fill-hot" style="width: 85%;"></div></div>
+        </div>
+
+        <div class="kpi-card qual-kpi">
+          <div class="kpi-header">
+            <span>🎯 QUALIFIED LEADS</span>
+            <span class="kpi-sub">Gate Passed & Fit</span>
+          </div>
+          <div class="kpi-value" id="kpi-qual-val">0</div>
+          <div class="kpi-bar"><div class="fill fill-qual" style="width: 65%;"></div></div>
+        </div>
+
+        <div class="kpi-card radar-kpi">
+          <div class="kpi-header">
+            <span>📡 ACTIVE RADAR</span>
+            <span class="kpi-sub">Monitoring & Devnet</span>
+          </div>
+          <div class="kpi-value" id="kpi-radar-val">0</div>
+          <div class="kpi-bar"><div class="fill fill-radar" style="width: 45%;"></div></div>
+        </div>
+
+        <div class="kpi-card africa-kpi">
+          <div class="kpi-header">
+            <span>🌍 AFRICA INTENT (A1/A2)</span>
+            <span class="kpi-sub">Official Expansion Signals</span>
+          </div>
+          <div class="kpi-value" id="kpi-africa-val">0</div>
+          <div class="kpi-bar"><div class="fill fill-africa" style="width: 75%;"></div></div>
+        </div>
+      </section>
+
+      <!-- Tab Views Container -->
+      <section class="tab-container">
+        <!-- 1. HOT Alerts Queue Tab -->
+        <div class="tab-pane active" id="tab-hot-queue">
+          <div class="pane-header">
+            <h2>🔥 High-Priority HOT Discovery Queue</h2>
+            <p>Candidates meeting strict Confidence (C ≥ 75), Outreach Priority (≥ 70), and Low Risk (R &lt; 35) gates.</p>
+          </div>
+          <div class="candidate-grid" id="grid-hot-candidates">
+            <!-- Dynamic Candidate Cards injected here -->
+          </div>
+        </div>
+
+        <!-- 2. Qualified Leads Tab -->
+        <div class="tab-pane" id="tab-qualified-queue">
+          <div class="pane-header">
+            <h2>🎯 Qualified Commercial & BD Leads</h2>
+            <p>Verified public chains passing outreach gates awaiting analyst review & tailored briefing.</p>
+          </div>
+          <div class="candidate-grid" id="grid-qual-candidates"></div>
+        </div>
+
+        <!-- 3. Radar Watchlist Tab -->
+        <div class="tab-pane" id="tab-radar-queue">
+          <div class="pane-header">
+            <h2>📡 Continuous Radar Watchlist</h2>
+            <p>Early devnets, testnets, and registry PRs accumulating multi-source corroboration.</p>
+          </div>
+          <div class="candidate-grid" id="grid-radar-candidates"></div>
+        </div>
+
+        <!-- 4. Africa Matrix Tab -->
+        <div class="tab-pane" id="tab-africa-matrix">
+          <div class="pane-header">
+            <h2>🌍 Africa Regional & Country Coverage Matrix</h2>
+            <p>Classified expansion intent, local fiat rails, payment hubs, and regional hiring activity.</p>
+          </div>
+          <div class="matrix-grid" id="matrix-priority-markets">
+            <!-- Dynamic Country Cards injected here -->
+          </div>
+        </div>
+
+        <!-- 5. Verifier Console Tab -->
+        <div class="tab-pane" id="tab-verifier-view">
+          <div class="pane-header">
+            <h2>⚡ Multi-Protocol Read-Only Verifier Console</h2>
+            <p>Test and verify public RPC endpoints with zero transaction footprint and SSRF-hardened safety.</p>
+          </div>
+          <div class="verifier-card">
+            <div class="verifier-inputs">
+              <input type="text" id="verifier-url-input" placeholder="Enter RPC endpoint URL (e.g. https://rpc.testnet.example.com)">
+              <select id="verifier-family-input">
+                <option value="evm">EVM (eth_chainId, getBlockByNumber)</option>
+                <option value="cosmos">Cosmos / CometBFT (/status, /genesis)</option>
+                <option value="substrate">Substrate (system_chain, getBlockHash)</option>
+                <option value="svm">SVM / Solana (getGenesisHash, getSlot)</option>
+                <option value="starknet">Starknet (starknet_chainId)</option>
+                <option value="aptos">Aptos (GET /v1, ledger info)</option>
+                <option value="sui">Sui Move (sui_getChainIdentifier)</option>
+                <option value="fuel">Fuel GraphQL (consensusParameters)</option>
+              </select>
+              <button class="btn btn-primary" id="btn-run-probe">Run Safe Probe</button>
+            </div>
+            <div class="probe-result-box" id="probe-output-box">
+              <pre><code>// Probe results will appear here with technical fingerprints, genesis hash, and block height.</code></pre>
+            </div>
+          </div>
+        </div>
+
+        <!-- 6. Source Register Tab -->
+        <div class="tab-pane" id="tab-sources-view">
+          <div class="pane-header">
+            <h2>⚙️ Source Registry & Operational Kill Switches</h2>
+            <p>Audit status, conditional ETags, rate budgets, and kill switch toggles for all 15 monitored collectors.</p>
+          </div>
+          <div class="table-responsive">
+            <table class="data-table" id="sources-table">
+              <thead>
+                <tr>
+                  <th>Source ID</th>
+                  <th>Family</th>
+                  <th>Tier</th>
+                  <th>Reliability</th>
+                  <th>Cadence</th>
+                  <th>Last Sync</th>
+                  <th>Status</th>
+                  <th>Actions</th>
+                </tr>
+              </thead>
+              <tbody id="sources-table-body">
+                <!-- Injected via JavaScript -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- 7. Digests & Briefs Tab -->
+        <div class="tab-pane" id="tab-digests-view">
+          <div class="pane-header">
+            <h2>📰 Intelligence Digests & Country Briefings</h2>
+            <p>Preview and export 07:30 WAT Morning Digest and 18:00 WAT Evening Close briefings.</p>
+          </div>
+          <div class="digest-view-controls">
+            <button class="btn btn-secondary" onclick="loadDigestPreview('morning')">🌅 07:30 WAT Morning Digest</button>
+            <button class="btn btn-secondary" onclick="loadDigestPreview('evening')">🌆 18:00 WAT Evening Digest</button>
+            <button class="btn btn-primary" id="btn-copy-digest-md">📋 Copy Markdown</button>
+          </div>
+          <div class="digest-preview-card" id="digest-preview-box">
+            <pre><code id="digest-content-code">Click a digest button above to generate a real-time briefing.</code></pre>
+          </div>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <!-- Full Evidence Card Modal -->
+  <div class="modal-overlay" id="modal-evidence-card">
+    <div class="modal-content">
+      <div class="modal-header">
+        <div class="modal-title-box">
+          <h2 id="modal-chain-name">Chain Name</h2>
+          <span class="badge" id="modal-stage-badge">Stage</span>
+        </div>
+        <button class="modal-close-btn" id="btn-modal-close">✕</button>
+      </div>
+
+      <div class="modal-body" id="modal-card-body">
+        <!-- Dynamically rendered 10-section card -->
+      </div>
+
+      <div class="modal-footer">
+        <div class="modal-actions-left">
+          <button class="btn btn-secondary" id="btn-modal-verify">⚡ Probe RPC</button>
+          <button class="btn btn-secondary" id="btn-modal-override-africa">🌍 Override Africa</button>
+          <button class="btn btn-secondary" id="btn-modal-copy-md">📋 Copy Markdown</button>
+        </div>
+        <div class="modal-actions-right">
+          <select id="modal-workflow-select">
+            <option value="NEW">NEW</option>
+            <option value="VERIFYING">VERIFYING</option>
+            <option value="RADAR">RADAR</option>
+            <option value="QUALIFIED">QUALIFIED</option>
+            <option value="APPROVED">APPROVED</option>
+            <option value="CONTACTED">CONTACTED</option>
+            <option value="ENGAGED">ENGAGED</option>
+            <option value="REJECTED">REJECTED</option>
+          </select>
+          <button class="btn btn-primary" id="btn-modal-save-transition">Update Workflow</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="/static/app.js"></script>
+</body>
+</html>

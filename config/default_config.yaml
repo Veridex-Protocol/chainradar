@@ -1,0 +1,122 @@
+system:
+  timezone_display: "Africa/Lagos"
+  storage_timezone: "UTC"
+  early_mainnet_days: 180
+  evidence_retention_days: 365
+  contact_inactivity_days: 90
+  human_approval_before_outreach: true
+  object_store_path: "./data/raw_evidence"
+
+# PostgreSQL is the identity store (spec 19). Override with DATABASE_URL.
+database:
+  url: "postgresql+asyncpg://ecd:ecd_dev_password@localhost:55432/ecd"
+  pool_size: 10
+  max_overflow: 20
+  echo: false
+
+redis:
+  url: "redis://localhost:56379/0"
+  enabled: false
+
+windows:
+  github_search_overlap_hours: 72
+  nightly_backfill_days: 14
+  rpc_liveness_recheck_seconds: 120
+  dedup_window_hours: 24
+
+africa:
+  country_source: "iso3166_plus_aliases"
+  languages: ["en", "fr", "pt", "ar", "sw"]
+  priority_markets: ["NG", "KE", "GH", "ZA", "RW", "EG", "MA", "UG", "TZ", "SN", "CI"]
+  require_evidence_for_explicit_intent: true
+
+alerts:
+  hot:
+    confidence_min: 75
+    priority_min: 70
+    risk_max: 34
+  qualified:
+    confidence_min: 65
+    priority_min: 55
+  radar:
+    radar_min: 45
+
+weights:
+  radar:
+    momentum: 0.40
+    confidence: 0.35
+    africa_fit: 0.25
+  outreach:
+    confidence: 0.45
+    africa_fit: 0.35
+    momentum: 0.20
+    risk_penalty: 0.30
+
+outreach_gate:
+  confidence_min: 65
+  require_official_attribution: true
+  min_independent_source_families: 2
+  allow_technical_verified_override: true
+
+cadence:
+  registry_prs_cron: "*/10 * * * *"
+  aggregated_json_cron: "3,18,33,48 * * * *"
+  github_broad_search_cron: "7,37 * * * *"
+  rss_atom_cron: "*/15 * * * *"
+  web_news_cron: "15 */2 * * *"
+  ats_careers_cron: "40 */6 * * *"
+  daily_reconciliation_cron: "20 1 * * *"
+  morning_digest_cron: "30 6 * * *"
+  evening_digest_cron: "0 17 * * *"
+  calibration_report_cron: "0 8 * * 1"
+
+# Endpoint safety and network controls (spec 15).
+verify:
+  allowed_schemes: [https]
+  # http is allowed ONLY for hosts listed here, by explicit policy.
+  allow_http_hosts: []
+  allowed_ports: [80, 443, 8545, 8546, 26657, 9944, 8899, 9650, 4000]
+  connect_timeout_seconds: 3.0
+  read_timeout_seconds: 5.0
+  max_response_bytes: 2000000
+  max_redirects: 0
+  per_domain_concurrency: 2
+  per_domain_rate_per_minute: 30
+  jitter_seconds: 0.25
+  liveness_recheck_min_seconds: 60
+  liveness_recheck_max_seconds: 180
+
+# Evidence freshness decays at different speeds by signal type (spec 17).
+freshness:
+  half_life_days:
+    registry: 21
+    official_web: 14
+    code_search: 10
+    infrastructure: 21
+    careers: 30
+    news: 7
+    social: 3
+    market: 30
+    verification: 7
+    standards: 45
+    explorer: 21
+    interop: 21
+    default: 14
+
+# Stage-specific evidence TTL driving the STALE state (spec 17).
+staleness:
+  days_by_stage:
+    S0_research_hint: 30
+    S1_devnet_prototype: 45
+    S2_public_testnet: 21
+    S3_incentivized_testnet: 14
+    S4_mainnet_announced: 14
+    S5_early_mainnet: 21
+    S6_established_archived: 90
+
+# Hard promotion gate (spec 01, 17).
+outreach_gate:
+  confidence_min: 65
+  require_official_attribution: true
+  min_independent_source_families: 2
+  allow_technical_verified_override: true

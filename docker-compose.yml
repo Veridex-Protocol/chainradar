@@ -1,0 +1,48 @@
+# Local development stack for the Early Chain Discovery engine.
+#
+# The engine's identity truth lives in PostgreSQL: the spec requires JSONB,
+# pg_trgm and (optionally) pgvector, plus BRIN/GIN index types that SQLite
+# cannot express. Redis backs the production queue/scheduler.
+name: ecd
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: ecd-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ecd
+      POSTGRES_PASSWORD: ecd_dev_password
+      POSTGRES_DB: ecd
+      # Deterministic collation so name normalization/ordering is stable.
+      POSTGRES_INITDB_ARGS: "--encoding=UTF8 --locale=C"
+    ports:
+      - "55432:5432"
+    volumes:
+      - ecd_pgdata:/var/lib/postgresql/data
+      - ./deploy/postgres/init:/docker-entrypoint-initdb.d:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ecd -d ecd"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+      start_period: 10s
+
+  redis:
+    image: redis:7-alpine
+    container_name: ecd-redis
+    restart: unless-stopped
+    command: ["redis-server", "--appendonly", "yes", "--save", ""]
+    ports:
+      - "56379:6379"
+    volumes:
+      - ecd_redisdata:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+
+volumes:
+  ecd_pgdata:
+  ecd_redisdata:

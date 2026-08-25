@@ -1,0 +1,34 @@
+{
+  "languages": {
+    "en": {
+      "name": "English",
+      "blockchain_terms": ["blockchain", "rollup", "appchain", "layer 1", "layer 2", "testnet", "mainnet", "validator", "smart contract", "crypto"],
+      "intent_terms": ["expansion", "hiring", "community", "ambassador", "grant", "hackathon", "partnership", "market entry", "developer relations", "devrel"],
+      "geography_terms": ["africa", "nigeria", "kenya", "ghana", "south africa", "rwanda", "uganda", "tanzania", "egypt"]
+    },
+    "fr": {
+      "name": "French",
+      "blockchain_terms": ["chaîne de blocs", "blockchain", "rollup", "réseau", "couche 1", "couche 2", "validateur", "contrat intelligent", "crypto"],
+      "intent_terms": ["expansion", "recrutement", "communauté", "ambassadeur", "subvention", "bourse", "partenariat", "entrée sur le marché", "relations développeurs", "développement de marché"],
+      "geography_terms": ["afrique", "africain", "africaine", "sénégal", "côte d'ivoire", "cameroun", "bénin", "togo", "mali", "guinée", "burkina faso", "congo", "gabon", "madagascar", "niger"]
+    },
+    "pt": {
+      "name": "Portuguese",
+      "blockchain_terms": ["blockchain", "cadeia de blocos", "rede", "camada 1", "camada 2", "validador", "contrato inteligente", "cripto"],
+      "intent_terms": ["expansão", "contratação", "comunidade", "embaixador", "subsídio", "bolsa", "parceria", "entrada no mercado", "relações com desenvolvedores"],
+      "geography_terms": ["áfrica", "africano", "africana", "angola", "moçambique", "cabo verde", "guiné-bissau", "são tomé e príncipe"]
+    },
+    "ar": {
+      "name": "Arabic",
+      "blockchain_terms": ["بلوكتشين", "سلسلة الكتل", "شبكة", "معدن", "مدقق", "عقد ذكي", "تشفير"],
+      "intent_terms": ["توسع", "توظيف", "مجتمع", "سفير", "منحة", "هاكاثون", "شراكة", "دخول السوق", "علاقات المطورين"],
+      "geography_terms": ["أفريقيا", "شمال أفريقيا", "مصر", "المغرب", "الجزائر", "تونس", "ليبيا", "السودان", "موريتانيا"]
+    },
+    "sw": {
+      "name": "Swahili",
+      "blockchain_terms": ["blockchain", "mtandao", "safu ya kwanza", "safu ya pili", "mkaguzi", "mkataba mahiri"],
+      "intent_terms": ["upanuzi", "uajiri", "jumuiya", "balozi", "ruzuku", "ushirikiano", "kuingia sokoni", "uhusiano wa watengenezaji"],
+      "geography_terms": ["afrika", "afrika mashariki", "kenya", "tanzania", "uganda", "rwanda", "burundi", "kongo"]
+    }
+  }
+}

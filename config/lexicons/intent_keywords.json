@@ -1,0 +1,64 @@
+{
+  "intent_packs": {
+    "hiring": {
+      "name": "Hiring & Talent",
+      "weight": 25,
+      "terms": [
+        "africa lead", "regional lead", "country manager", "community manager",
+        "devrel", "developer relations", "developer advocate", "ecosystem growth",
+        "head of growth africa", "partnerships manager", "business development",
+        "government relations", "regional growth", "ecosystem lead"
+      ]
+    },
+    "programs": {
+      "name": "Programs & Community",
+      "weight": 20,
+      "terms": [
+        "ambassador", "ambassador program", "community chapter", "developer grant",
+        "ecosystem grant", "accelerator", "hackathon", "validator cohort",
+        "campus ambassador", "university tour", "developer bootcamp", "fellowship"
+      ]
+    },
+    "market_entry": {
+      "name": "Market Entry & Expansion",
+      "weight": 25,
+      "terms": [
+        "expand to africa", "expanding in africa", "launch in africa",
+        "market entry", "africa expansion", "regional strategy", "go-to-market",
+        "localize", "distribution partner", "entering nigeria", "entering kenya",
+        "africa launch"
+      ]
+    },
+    "adoption": {
+      "name": "Adoption & Use Cases",
+      "weight": 15,
+      "terms": [
+        "payments", "stablecoins", "remittance", "mobile money", "financial inclusion",
+        "depin", "rwa", "real world assets", "identity", "cross-border trade",
+        "sme payments", "merchant adoption", "airtime", "microfinance"
+      ]
+    },
+    "partnership": {
+      "name": "Strategic Partnerships",
+      "weight": 20,
+      "terms": [
+        "mou", "memorandum of understanding", "strategic partner", "integration partner",
+        "ecosystem partner", "launch partner", "local operator", "government partner",
+        "central bank pilot", "telecom partnership", "fintech integration"
+      ]
+    },
+    "capital": {
+      "name": "Capital & Ecosystem Funds",
+      "weight": 15,
+      "terms": [
+        "ecosystem fund", "africa fund", "strategic investment", "grant pool",
+        "venture fund", "rfp", "vendor RFP", "co-investment"
+      ]
+    }
+  },
+  "job_role_patterns": [
+    "community", "developer relations", "devrel", "ecosystem", "growth",
+    "partnerships", "business development", "country manager", "regional lead",
+    "government relations", "developer advocate", "ambassador"
+  ]
+}
