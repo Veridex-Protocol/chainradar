@@ -12,6 +12,8 @@ interface HeaderProps {
   setSelectedStack: (stack: string) => void;
   selectedAfrica: string;
   setSelectedAfrica: (a: string) => void;
+  selectedFunding?: string;
+  setSelectedFunding?: (f: string) => void;
   onRefresh: () => void;
   isLoading: boolean;
 }
@@ -25,6 +27,8 @@ export const Header: React.FC<HeaderProps> = ({
   setSelectedStack,
   selectedAfrica,
   setSelectedAfrica,
+  selectedFunding = "",
+  setSelectedFunding,
   onRefresh,
   isLoading,
 }) => {
@@ -118,6 +122,19 @@ export const Header: React.FC<HeaderProps> = ({
               <option value="A3_africa_compatible">A3: Compatible</option>
               <option value="A4_no_evidence">A4: No Evidence</option>
             </select>
+
+            {setSelectedFunding && (
+              <select
+                value={selectedFunding}
+                onChange={(e) => setSelectedFunding(e.target.value)}
+                className="bg-slate-900/90 border border-slate-800 rounded-lg px-2.5 py-1.5 text-xs text-amber-300 focus:outline-none focus:border-amber-500"
+              >
+                <option value="">All Capital</option>
+                <option value="recent">⚡ Recent Funding (Q3 2025–Now)</option>
+                <option value="funded">💰 All Funded</option>
+                <option value="unfunded">🔍 Unfunded / Bootstrapped</option>
+              </select>
+            )}
           </div>
 
           {/* Right Status */}

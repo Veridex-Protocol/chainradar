@@ -58,34 +58,58 @@ def make_kpi_table(candidates: list) -> Table:
 
 
 def make_candidates_table(candidates: list) -> Table:
-    table = Table(title="Live Chain Discovery Pipeline", expand=True, border_style="dim")
-    table.add_column("Chain Name", style="bold white", width=22)
-    table.add_column("Stage", style="magenta", width=18)
-    table.add_column("Stack", style="blue", width=12)
-    table.add_column("Africa Intent", width=24)
-    table.add_column("Outreach", justify="right", style="bold red", width=10)
-    table.add_column("Radar", justify="right", style="cyan", width=8)
-    table.add_column("State", justify="center", width=10)
+    table = Table(title="Live Chain Discovery Pipeline (Ranked by Recency & Recent Funding)", expand=True, border_style="dim")
+    table.add_column("Chain Name", style="bold white", width=18)
+    table.add_column("Stage", style="magenta", width=12)
+    table.add_column("Stack", style="blue", width=10)
+    table.add_column("Africa", width=14)
+    table.add_column("Raised", justify="right", style="bold green", width=10)
+    table.add_column("Raised On", justify="center", style="dim green", width=11)
+    table.add_column("Lead Investor", style="bold yellow", width=16)
+    table.add_column("Outreach", justify="right", style="bold red", width=9)
+    table.add_column("State", justify="center", width=9)
 
     if not candidates:
-        table.add_row("No candidates observed yet", "-", "-", "-", "-", "-", "-")
+        table.add_row("No candidates observed yet", "-", "-", "-", "-", "-", "-", "-", "-")
         return table
 
-    for c in candidates[:8]:
+    for c in candidates[:12]:
         a_label = c.assessment.intent_label if c.assessment else "A4_no_evidence"
         a_color = "red" if a_label.startswith("A1") else ("yellow" if a_label.startswith("A2") else "dim cyan")
         a_fmt = f"[{a_color}]{a_label.replace('_', ' ')}[/{a_color}]"
 
-        state_color = "bold red" if c.score.state == "HOT" else ("bold yellow" if c.score.state == "QUALIFIED" else "cyan")
-        state_fmt = f"[{state_color}]{c.score.state}[/{state_color}]"
+        state_color = "bold red" if c.score and c.score.state == "HOT" else ("bold yellow" if c.score and c.score.state == "QUALIFIED" else ("dim" if c.score and c.score.state == "STALE" else "cyan"))
+        state_fmt = f"[{state_color}]{c.score.state if c.score else 'RADAR'}[/{state_color}]"
+
+        rounds = c.funding_rounds or []
+        latest_round = max(rounds, key=lambda r: r.announced_at or datetime.min.replace(tzinfo=timezone.utc)) if rounds else None
+        total_usd = sum(float(r.amount_usd) for r in rounds if r.amount_usd)
+        if total_usd >= 1_000_000_000:
+            raised_str = f"${total_usd/1_000_000_000:.1f}B"
+        elif total_usd >= 1_000_000:
+            raised_str = f"${total_usd/1_000_000:.1f}M"
+        elif total_usd > 0:
+            raised_str = f"${total_usd/1_000:.0f}K"
+        elif rounds:
+            raised_str = "undisc."
+        else:
+            raised_str = "—"
+
+        raised_on = latest_round.announced_at.strftime("%Y-%m-%d") if (latest_round and latest_round.announced_at) else "—"
+        lead_investor = (latest_round.lead_investor[:15] if latest_round and latest_round.lead_investor else "—")
+        outreach_score = f"{c.score.outreach_score:.0f}" if c.score else "0"
+
+        stage_clean = c.stage.replace("S2_public_testnet", "S2 Testnet").replace("S1_devnet_prototype", "S1 Devnet").replace("S5_early_mainnet", "S5 Mainnet").replace("S4_mainnet_announced", "S4 Announce")
 
         table.add_row(
-            c.canonical_name[:20],
-            c.stage,
+            c.canonical_name[:17],
+            stage_clean,
             f"{c.stack_family.upper()} ({c.layer or 'L2'})",
             a_fmt,
-            f"{c.score.outreach_score:.0f}",
-            f"{c.score.radar_score:.0f}",
+            raised_str,
+            raised_on,
+            lead_investor,
+            outreach_score,
             state_fmt,
         )
 
@@ -93,19 +117,20 @@ def make_candidates_table(candidates: list) -> Table:
 
 
 def make_source_health_table() -> Table:
-    table = Table(title="Source Health & Collectors Status", expand=True, border_style="dim")
+    table = Table(title="Source Health & Live Ingestion Feeds", expand=True, border_style="dim")
     table.add_column("Source", style="cyan", width=20)
     table.add_column("Tier", justify="center", width=6)
     table.add_column("Cadence", width=10)
     table.add_column("Status", justify="center", width=10)
 
+    table.add_row("recent_funded", "A", "10m", "[bold green]ONLINE[/bold green]")
     table.add_row("ethereum_lists", "A", "10m", "[bold green]ONLINE[/bold green]")
     table.add_row("chainid_network", "A", "15m", "[bold green]ONLINE[/bold green]")
     table.add_row("superchain_reg", "A", "10m", "[bold green]ONLINE[/bold green]")
     table.add_row("cosmos_registry", "A", "15m", "[bold green]ONLINE[/bold green]")
+    table.add_row("funding_enricher", "A", "live", "[bold green]ONLINE[/bold green]")
     table.add_row("github_hyper", "A", "30m", "[bold green]ONLINE[/bold green]")
     table.add_row("ats_job_boards", "C", "6h", "[bold green]ONLINE[/bold green]")
-    table.add_row("bluesky_stream", "D", "realtime", "[bold green]ONLINE[/bold green]")
 
     return table
 

@@ -56,6 +56,24 @@ class EvidenceCardBuilder:
                         "source_url": c.source_url,
                     })
 
+        # Funding Rounds (Spec 13 'Capital')
+        funding_list = []
+        total_funding_usd = 0.0
+        for f in (chain.funding_rounds or []):
+            if f.amount_usd:
+                total_funding_usd += float(f.amount_usd)
+            funding_list.append({
+                "round_type": f.round_type,
+                "amount_usd": f.amount_usd,
+                "amount_as_published": f.amount_as_published,
+                "lead_investor": f.lead_investor,
+                "investors": f.investors,
+                "announced_at": f.announced_at.isoformat() if f.announced_at else None,
+                "source_url": f.source_url,
+                "quote": f.quote,
+                "confidence": f.confidence,
+            })
+
         # Scores
         score_obj = chain.score
         scores = {
@@ -119,6 +137,11 @@ class EvidenceCardBuilder:
                 "rpc_urls": primary_net.rpc_urls if primary_net else [],
                 "explorer_urls": primary_net.explorer_urls if primary_net else [],
             },
+            "funding": {
+                "total_disclosed_usd": total_funding_usd,
+                "rounds_count": len(funding_list),
+                "rounds": funding_list,
+            },
             "timeline": {
                 "repo_created_at": chain.repo_created_at.isoformat() if chain.repo_created_at else None,
                 "registry_pr_opened_at": chain.registry_pr_opened_at.isoformat() if chain.registry_pr_opened_at else None,
@@ -157,6 +180,16 @@ class EvidenceCardBuilder:
         i = card["identity"]
         a = card["africa"]
         s = card["scores"]
+        f = card.get("funding", {})
+        
+        funding_md = "No publicly announced funding recorded."
+        if f.get("rounds"):
+            f_rows = []
+            for r in f["rounds"]:
+                amt = r.get("amount_as_published") or "Undisclosed"
+                lead = f" (Led by {r['lead_investor']})" if r.get("lead_investor") else ""
+                f_rows.append(f"- **{r['round_type'].upper()}**: {amt}{lead} — [Source Link]({r['source_url']})\n  > \"{r.get('quote') or ''}\"")
+            funding_md = "\n".join(f_rows)
         
         md = f"""# Evidence Card: {h['canonical_name']}
 
@@ -183,17 +216,20 @@ class EvidenceCardBuilder:
 - **Matched Countries**: {', '.join(a['countries']) if a['countries'] else 'None explicitly stated'}
 - **Regions**: {', '.join(a['regions']) if a['regions'] else 'None'}
 
-### 4. Scoring & Pipeline State
+### 4. Funding & Disclosed Capital
+{funding_md}
+
+### 5. Scoring & Pipeline State
 - **Confidence (C)**: `{s['confidence']}/100` | **Momentum (M)**: `{s['momentum']}/100`
 - **Africa Fit (A)**: `{s['africa_fit']}/100` | **Risk (R)**: `{s['risk']}/100`
 - **Radar Score**: `{s['radar_score']}/100`
 - **Outreach Priority**: `{s['outreach_score']}/100`
 - **Queue State**: **`{s['state']}`**
 
-### 5. Recommended Next Action
+### 6. Recommended Next Action
 > **{card['recommendation']}**
 
-### 6. Primary Evidence Sources
+### 7. Primary Evidence Sources
 """
         for ev in card["evidence"][:5]:
             md += f"- [{ev['source_id']}]({ev['url']}) (Observed: {ev['observed_at']})\n"

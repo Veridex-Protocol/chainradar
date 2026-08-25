@@ -69,3 +69,24 @@ def days_between(later: datetime, earlier: datetime) -> float:
 
 def age_days(value: datetime, now: datetime | None = None) -> float:
     return days_between(now or utcnow(), value)
+
+
+def q3_2025_start() -> datetime:
+    """Returns the start timestamp of Q3 2025 in UTC (2025-07-01T00:00:00Z)."""
+    return datetime(2025, 7, 1, 0, 0, 0, tzinfo=timezone.utc)
+
+
+def parse_funding_date_filter(val: str | None) -> tuple[datetime | None, datetime | None]:
+    """Parse funding date filter strings like 'q3_2025', 'q3_2025_to_now', '2025-07-01' into UTC ranges."""
+    if not val:
+        return None, None
+    val_clean = val.strip().lower()
+    now = utcnow()
+    if val_clean in ("q3_2025", "q3_2025_to_now", "q3-2025", "q3-2025-to-now", "recent"):
+        return q3_2025_start(), now
+    
+    parsed = parse_iso(val)
+    if parsed:
+        return parsed, now
+    return None, None
+

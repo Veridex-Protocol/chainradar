@@ -80,6 +80,12 @@ export const CandidateCard: React.FC<CandidateCardProps> = ({ candidate, onOpenM
             {aBadgeText} ({candidate.africa_score})
           </span>
 
+          {candidate.latest_funding && (
+            <span className="px-2 py-0.5 text-[10px] font-bold rounded-md bg-amber-500/15 text-amber-300 border border-amber-500/30 flex items-center gap-1">
+              💰 {candidate.latest_funding.amount_as_published || "Funded"} {candidate.latest_funding.round_type ? `(${candidate.latest_funding.round_type.replace(/_/g, " ").toUpperCase()})` : ""}
+            </span>
+          )}
+
           {candidate.last_verified_at && (
             <span className="px-2 py-0.5 text-[10px] font-bold rounded-md bg-emerald-500/15 text-emerald-300 border border-emerald-500/30 flex items-center gap-1">
               <ShieldCheck className="w-3 h-3 text-emerald-400" />

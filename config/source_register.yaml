@@ -297,8 +297,26 @@ sources:
     burst: 5
   kill_switch: false
   reliability: 0.45
-  cadence: 15 */2 * * *
-  note: Discovery only. Promotion requires resolving to the origin official page.
+- source_id: recent_funded_chains
+  name: Recent Funded Early Chains & Launches (Q3 2025 - Present)
+  family: registry
+  tier: A
+  owner: research
+  terms_url: https://github.com/ethereum-lists/chains
+  access_method: curated_and_verified_feeds
+  fields_stored:
+  - name
+  - chain_id
+  - rpc_urls
+  - funding
+  - published_at
+  retention_days: 365
+  rate_limit:
+    requests_per_minute: 60
+    burst: 10
+  kill_switch: false
+  reliability: 0.98
+  cadence: '*/10 * * * *'
 _note: 'Authoritative, machine-readable source register (spec 23). `source_id` MUST match a collector''s
   source_id: an unregistered source is treated as disabled. `providers` lists sub-providers polled by
   one collector.'

@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from datetime import datetime, timezone
 from typing import Any, Dict, List, Optional
 from fastapi import APIRouter, Depends, HTTPException, Query
 from pydantic import BaseModel
@@ -14,6 +15,7 @@ from src.scoring.engine import scoring_engine
 from src.storage.database import get_db_session
 from src.storage.models import AfricaAssessment, AuditLog, ChainProduct
 from src.storage.repository import Repository
+from src.util.timeutil import parse_funding_date_filter, parse_iso
 from src.verifier.engine import verifier_engine
 
 router = APIRouter(prefix="/candidates", tags=["candidates"])
@@ -40,11 +42,24 @@ async def list_candidates(
     africa_intent: Optional[str] = Query(None),
     stack_family: Optional[str] = Query(None),
     q: Optional[str] = Query(None),
+    has_funding: Optional[bool] = Query(None, description="Filter candidates with or without funding rounds"),
+    recent_funding: Optional[bool] = Query(None, description="Filter for chains with verified funding from Q3 2025 to date.now"),
+    funding_since: Optional[str] = Query(None, description="ISO timestamp or preset (e.g. 2025-07-01, q3_2025)"),
+    funding_until: Optional[str] = Query(None, description="ISO timestamp"),
     limit: int = Query(50, ge=1, le=200),
     offset: int = Query(0, ge=0),
     db: AsyncSession = Depends(get_db_session),
 ) -> Dict[str, Any]:
     repo = Repository(db)
+
+    # Parse date filters
+    parsed_since = None
+    parsed_until = None
+    if funding_since:
+        parsed_since, parsed_until = parse_funding_date_filter(funding_since)
+    if funding_until:
+        parsed_until = parse_iso(funding_until)
+
     candidates = await repo.list_candidates(
         state=state,
         workflow_state=workflow_state,
@@ -53,10 +68,18 @@ async def list_candidates(
         search_query=q,
         limit=limit,
         offset=offset,
+        has_funding=has_funding,
+        recent_funding_only=bool(recent_funding),
+        funding_since=parsed_since,
+        funding_until=parsed_until,
     )
 
     results = []
     for c in candidates:
+        rounds = c.funding_rounds or []
+        latest_round = max(rounds, key=lambda r: r.announced_at or datetime.min.replace(tzinfo=timezone.utc)) if rounds else None
+        total_usd = sum(float(r.amount_usd) for r in rounds if r.amount_usd)
+
         results.append({
             "id": c.id,
             "name": c.canonical_name,
@@ -70,6 +93,15 @@ async def list_candidates(
             "africa_label": c.assessment.intent_label if c.assessment else "A4_no_evidence",
             "africa_score": c.assessment.total_score if c.assessment else 0.0,
             "africa_countries": c.assessment.countries if c.assessment else [],
+            "funding_rounds_count": len(rounds),
+            "total_funding_usd": total_usd,
+            "latest_funding": {
+                "round_type": latest_round.round_type,
+                "amount_usd": latest_round.amount_usd,
+                "amount_as_published": latest_round.amount_as_published,
+                "lead_investor": latest_round.lead_investor,
+                "announced_at": latest_round.announced_at.isoformat() if latest_round.announced_at else None,
+            } if latest_round else None,
             "scores": {
                 "confidence": c.score.confidence if c.score else 0.0,
                 "momentum": c.score.momentum if c.score else 0.0,

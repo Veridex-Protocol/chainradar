@@ -212,6 +212,8 @@ def run_scan(
     from src.collectors.registries.superchain import SuperchainCollector
     from src.collectors.registries.cosmos_registry import CosmosRegistryCollector
     from src.collectors.web_news.rss_sitemaps import RSSFeedsCollector
+    from src.collectors.web_news.recent_funding import RecentFundedChainsCollector
+    from src.collectors.github.hyper_search import GitHubHyperSearchCollector
 
     collectors_map = {
         "ethereum_lists": EthereumListsCollector(),
@@ -219,6 +221,8 @@ def run_scan(
         "superchain_registry": SuperchainCollector(),
         "cosmos_chain_registry": CosmosRegistryCollector(),
         "rss_sitemaps": RSSFeedsCollector(),
+        "recent_funded_chains": RecentFundedChainsCollector(),
+        "github_hyper_search": GitHubHyperSearchCollector(),
     }
 
     async def _scan():
@@ -297,6 +301,7 @@ def enrich_candidates(
     candidate: Optional[str] = typer.Option(None, "--candidate", "-c", help="Specific candidate slug/name to enrich"),
     limit: int = typer.Option(100, "--limit", "-n", help="Max candidates to enrich"),
     live_search: bool = typer.Option(True, "--live/--no-live", help="Perform live web & news queries"),
+    skip_existing: bool = typer.Option(True, "--skip-existing/--all", help="Skip chains with existing funding and focus on un-enriched ones"),
 ):
     """Enrich blockchain candidates with verifiable public funding rounds and live activity data."""
     async def _enrich():
@@ -319,7 +324,16 @@ def enrich_candidates(
                     return
                 candidates_to_enrich = [c]
             else:
-                candidates_to_enrich = await repo.list_candidates(limit=limit)
+                has_funding_filter = False if skip_existing else None
+                candidates_to_enrich = await repo.list_candidates(limit=limit, has_funding=has_funding_filter)
+
+            total_unfunded = await repo.count_candidates(has_funding=False)
+            total_funded = await repo.count_candidates(has_funding=True)
+            console.print(
+                f"[dim]Database Status: [bold cyan]{total_funded}[/bold cyan] chains with verified funding, "
+                f"[bold yellow]{total_unfunded}[/bold yellow] without funding. "
+                f"Processing next [bold white]{len(candidates_to_enrich)}[/bold white] chains...[/dim]\n"
+            )
 
             total_enriched = 0
             total_rounds = 0
@@ -367,6 +381,9 @@ def list_candidates(
     search: Optional[str] = typer.Option(None, "--search", "-q", help="Search query string"),
     stack: Optional[str] = typer.Option(None, "--stack", help="Filter by stack family: evm, cosmos, substrate, svm"),
     africa: Optional[str] = typer.Option(None, "--africa", help="Filter by Africa label: A1, A2, A3, A4"),
+    recent_funding: bool = typer.Option(False, "--recent-funding", "-rf", help="Filter for chains with verified funding from Q3 2025 to date.now"),
+    funding_since: Optional[str] = typer.Option(None, "--funding-since", help="Filter funding announced on or after date (YYYY-MM-DD or 'q3_2025')"),
+    has_funding: Optional[bool] = typer.Option(None, "--has-funding/--no-funding", help="Filter chains with or without funding rounds"),
     page_size: int = typer.Option(25, "--page-size", "-n", help="Rows per page"),
     page: int = typer.Option(1, "--page", "-p", help="Page number to display"),
     verified_only: bool = typer.Option(False, "--verified", help="Show only RPC-verified chains"),
@@ -379,6 +396,8 @@ def list_candidates(
     Results are ranked by outreach score. Use n/p to page through them, or
     --page / --no-interactive for scripted output.
     """
+    from src.util.timeutil import parse_funding_date_filter
+
     async def _render_page(session, page_number: int, total: int) -> int:
         repo = Repository(session)
 
@@ -393,6 +412,11 @@ def list_candidates(
             }
             africa_filter = africa_map.get(africa.upper(), africa)
 
+        parsed_since = None
+        parsed_until = None
+        if funding_since:
+            parsed_since, parsed_until = parse_funding_date_filter(funding_since)
+
         total_pages = max(1, (total + page_size - 1) // page_size)
         page_number = max(1, min(page_number, total_pages))
         offset = (page_number - 1) * page_size
@@ -405,12 +429,17 @@ def list_candidates(
             limit=page_size,
             offset=offset,
             verified_only=verified_only,
+            has_funding=has_funding,
+            recent_funding_only=recent_funding,
+            funding_since=parsed_since,
+            funding_until=parsed_until,
         )
 
+        title_suffix = " [Recent Funding Q3 2025–Now]" if recent_funding else ""
         table = Table(
             title=(
                 f"🔗 ChainRadar — page {page_number}/{total_pages} "
-                f"(showing {offset + 1}-{min(offset + page_size, total)} of {total:,})"
+                f"(showing {offset + 1}-{min(offset + page_size, total)} of {total:,}){title_suffix}"
             ),
             expand=True,
             show_lines=False,
@@ -527,12 +556,21 @@ def list_candidates(
                 }
                 africa_filter = africa_map.get(africa.upper(), africa)
 
+            parsed_since = None
+            parsed_until = None
+            if funding_since:
+                parsed_since, parsed_until = parse_funding_date_filter(funding_since)
+
             total = await repo.count_candidates(
                 state=state.upper() if state else None,
                 stack_family=stack.lower() if stack else None,
                 africa_intent=africa_filter,
                 search_query=search,
                 verified_only=verified_only,
+                has_funding=has_funding,
+                recent_funding_only=recent_funding,
+                funding_since=parsed_since,
+                funding_until=parsed_until,
             )
             if total == 0:
                 console.print("[yellow]No candidates match those filters.[/yellow]")

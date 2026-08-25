@@ -7,7 +7,7 @@ import json
 import uuid
 from datetime import datetime, timezone
 from typing import Any, Dict, List, Optional, Tuple
-from sqlalchemy import delete, desc, func, or_, select, update
+from sqlalchemy import and_, delete, desc, func, or_, select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
@@ -283,6 +283,11 @@ class Repository:
         limit: int = 50,
         offset: int = 0,
         verified_only: bool = False,
+        has_funding: Optional[bool] = None,
+        funding_since: Optional[datetime] = None,
+        funding_until: Optional[datetime] = None,
+        funding_min_amount: Optional[float] = None,
+        recent_funding_only: bool = False,
     ) -> List[ChainProduct]:
         stmt = (
             select(ChainProduct)
@@ -321,10 +326,54 @@ class Repository:
         if verified_only:
             stmt = stmt.where(ChainProduct.last_verified_at.isnot(None))
 
-        # NULLS LAST so unscored candidates never outrank scored ones.
+        # Funding Filters
+        if recent_funding_only:
+            if funding_since is None:
+                funding_since = datetime(2025, 7, 1, 0, 0, 0, tzinfo=timezone.utc)
+            if funding_until is None:
+                funding_until = datetime.now(timezone.utc)
+
+        if funding_since is not None or funding_until is not None or funding_min_amount is not None:
+            f_conds = []
+            if funding_since is not None:
+                f_conds.append(FundingRound.announced_at >= funding_since)
+            if funding_until is not None:
+                f_conds.append(FundingRound.announced_at <= funding_until)
+            if funding_min_amount is not None:
+                f_conds.append(FundingRound.amount_usd >= funding_min_amount)
+            stmt = stmt.where(ChainProduct.funding_rounds.any(and_(*f_conds)))
+        elif has_funding is True:
+            stmt = stmt.where(ChainProduct.funding_rounds.any())
+        elif has_funding is False:
+            stmt = stmt.where(~ChainProduct.funding_rounds.any())
+
+        # Prioritize state (HOT/QUALIFIED first), recent funding date, outreach score, funding amount, and recent first_seen
+        latest_funding_date = (
+            select(func.max(FundingRound.announced_at))
+            .where(FundingRound.candidate_id == ChainProduct.id)
+            .scalar_subquery()
+        )
+        total_funding_amount = (
+            select(func.coalesce(func.sum(FundingRound.amount_usd), 0.0))
+            .where(FundingRound.candidate_id == ChainProduct.id)
+            .scalar_subquery()
+        )
+
+        from sqlalchemy import case
+        state_priority = case(
+            (ScoreSnapshot.state == "HOT", 1),
+            (ScoreSnapshot.state == "QUALIFIED", 2),
+            (ScoreSnapshot.state == "RADAR", 3),
+            (ScoreSnapshot.state == "STALE", 4),
+            (ScoreSnapshot.state == "REJECT", 5),
+            else_=6,
+        )
+
         stmt = stmt.order_by(
+            state_priority.asc(),
+            desc(latest_funding_date).nullslast(),
             desc(ScoreSnapshot.outreach_score).nullslast(),
-            desc(ScoreSnapshot.radar_score).nullslast(),
+            desc(total_funding_amount).nullslast(),
             desc(ChainProduct.first_seen_at),
         )
         stmt = stmt.limit(limit).offset(offset)
@@ -339,6 +388,11 @@ class Repository:
         stack_family: Optional[str] = None,
         search_query: Optional[str] = None,
         verified_only: bool = False,
+        has_funding: Optional[bool] = None,
+        funding_since: Optional[datetime] = None,
+        funding_until: Optional[datetime] = None,
+        funding_min_amount: Optional[float] = None,
+        recent_funding_only: bool = False,
     ) -> int:
         """Total matching candidates, for pagination."""
         stmt = (
@@ -365,6 +419,27 @@ class Repository:
             )
         if verified_only:
             stmt = stmt.where(ChainProduct.last_verified_at.isnot(None))
+
+        # Funding Filters
+        if recent_funding_only:
+            if funding_since is None:
+                funding_since = datetime(2025, 7, 1, 0, 0, 0, tzinfo=timezone.utc)
+            if funding_until is None:
+                funding_until = datetime.now(timezone.utc)
+
+        if funding_since is not None or funding_until is not None or funding_min_amount is not None:
+            f_conds = []
+            if funding_since is not None:
+                f_conds.append(FundingRound.announced_at >= funding_since)
+            if funding_until is not None:
+                f_conds.append(FundingRound.announced_at <= funding_until)
+            if funding_min_amount is not None:
+                f_conds.append(FundingRound.amount_usd >= funding_min_amount)
+            stmt = stmt.where(ChainProduct.funding_rounds.any(and_(*f_conds)))
+        elif has_funding is True:
+            stmt = stmt.where(ChainProduct.funding_rounds.any())
+        elif has_funding is False:
+            stmt = stmt.where(~ChainProduct.funding_rounds.any())
         return int(await self.session.scalar(stmt) or 0)
 
     # --------------------------------------------------------------------------

@@ -40,6 +40,16 @@ query_packs:
       window_hours: 72
       cadence_minutes: 30
 
+    - name: "latest_funded_chains"
+      query: '(funding OR "seed round" OR "series a" OR "series b" OR "raised" OR "backed by") (testnet OR mainnet OR chain OR rollup OR "layer 2") in:readme pushed:>={DATE}'
+      window_hours: 72
+      cadence_minutes: 30
+
+    - name: "recent_chains_q3_2025"
+      query: "(blockchain OR rollup OR appchain OR testnet) in:name,description,readme created:>={DATE_Q3_2025} archived:false"
+      window_hours: 8760
+      cadence_minutes: 60
+
   web_news:
     - name: "lifecycle"
       query: '"public testnet" (blockchain OR rollup OR appchain OR "layer 1" OR "layer 2")'

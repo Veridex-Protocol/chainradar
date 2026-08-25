@@ -83,6 +83,9 @@ class ReportGenerator:
             "layer",
             "africa_intent",
             "africa_score",
+            "total_funding_usd",
+            "latest_round_type",
+            "latest_round_announced_at",
             "outreach_score",
             "radar_score",
             "confidence",
@@ -108,6 +111,10 @@ class ReportGenerator:
                 state_s = c.score.state if c.score else "RADAR"
                 wf_s = c.score.workflow_state if c.score else "NEW"
 
+                rounds = c.funding_rounds or []
+                total_usd = sum(float(r.amount_usd) for r in rounds if r.amount_usd)
+                latest_r = max(rounds, key=lambda r: r.announced_at or datetime.min.replace(tzinfo=timezone.utc)) if rounds else None
+
                 writer.writerow({
                     "id": c.id,
                     "name": c.canonical_name,
@@ -118,6 +125,9 @@ class ReportGenerator:
                     "layer": c.layer or "L2",
                     "africa_intent": a_label,
                     "africa_score": a_score,
+                    "total_funding_usd": total_usd,
+                    "latest_round_type": latest_r.round_type if latest_r else None,
+                    "latest_round_announced_at": latest_r.announced_at.isoformat() if (latest_r and latest_r.announced_at) else None,
                     "outreach_score": outreach_s,
                     "radar_score": radar_s,
                     "confidence": conf_s,

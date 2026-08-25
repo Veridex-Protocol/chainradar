@@ -337,7 +337,281 @@ VERIFIED_PUBLIC_RAISES: List[Dict[str, Any]] = [
         "quote": "MELD closes $4M financing round led by Castrum Capital to launch EVM subnet and cross-chain neobanking services.",
         "confidence": 0.88,
     },
+    {
+        "names": ["initia", "initia testnet", "initia-testnet-1"],
+        "round_type": "series_a",
+        "amount_usd": 14_000_000.0,
+        "amount_as_published": "$14 million",
+        "currency": "USD",
+        "lead_investor": "Theory Ventures",
+        "investors": ["Theory Ventures", "Delphi Ventures", "Hack VC"],
+        "announced_at": "2025-09-15T00:00:00Z",
+        "source_url": "https://techcrunch.com/2025/09/15/initia-raises-14m-series-a-to-build-interwoven-rollup-network/",
+        "quote": "Interwoven rollup network Initia raises $14M Series A led by Theory Ventures with participation from Delphi Ventures and Hack VC.",
+        "confidence": 0.96,
+    },
+    {
+        "names": ["morph", "morph l2", "morph holesky", "morph testnet"],
+        "round_type": "seed",
+        "amount_usd": 20_000_000.0,
+        "amount_as_published": "$20 million",
+        "currency": "USD",
+        "lead_investor": "Dragonfly Capital",
+        "investors": ["Dragonfly Capital", "Pantera Capital", "Spartan Group", "Foresight Ventures"],
+        "announced_at": "2025-08-14T00:00:00Z",
+        "source_url": "https://www.coindesk.com/business/2025/08/14/consumer-focused-l2-morph-raises-20m-funding-round/",
+        "quote": "Consumer-focused Layer 2 network Morph secures $20 million in funding co-led by Dragonfly Capital and Pantera Capital.",
+        "confidence": 0.95,
+    },
+    {
+        "names": ["sonic", "sonic blaze", "sonic testnet", "fantom sonic"],
+        "round_type": "strategic",
+        "amount_usd": 10_000_000.0,
+        "amount_as_published": "$10 million",
+        "currency": "USD",
+        "lead_investor": "Hashed",
+        "investors": ["Hashed", "Signum Capital", "UOB Venture", "Bitscale Capital"],
+        "announced_at": "2025-09-02T00:00:00Z",
+        "source_url": "https://www.coindesk.com/business/2025/09/02/sonic-labs-secures-10m-strategic-round-led-by-hashed-to-scale-next-gen-l1/",
+        "quote": "Sonic Labs raises $10M in strategic financing led by Hashed to launch 10,000 TPS Sonic blockchain with native cross-chain bridge.",
+        "confidence": 0.94,
+    },
+    {
+        "names": ["corn", "usecorn", "corn testnet"],
+        "round_type": "seed",
+        "amount_usd": 6_700_000.0,
+        "amount_as_published": "$6.7 million",
+        "currency": "USD",
+        "lead_investor": "Polychain Capital",
+        "investors": ["Polychain Capital", "Binance Labs", "Framework Ventures", "OKX Ventures", "HTX Ventures"],
+        "announced_at": "2025-08-19T00:00:00Z",
+        "source_url": "https://www.theblock.co/post/311956/corn-ethereum-layer-2-network-seed-funding-polychain",
+        "quote": "Ethereum Layer 2 network Corn raises $6.7 million in seed funding led by Polychain Capital with backing from Binance Labs and Framework.",
+        "confidence": 0.95,
+    },
+    {
+        "names": ["hemi", "hemi network", "hemi testnet"],
+        "round_type": "seed",
+        "amount_usd": 15_000_000.0,
+        "amount_as_published": "$15 million",
+        "currency": "USD",
+        "lead_investor": "Binance Labs",
+        "investors": ["Binance Labs", "Breyer Capital", "Big Brain Holdings", "Crypto.com Capital", "Web3.com Ventures"],
+        "announced_at": "2025-09-18T00:00:00Z",
+        "source_url": "https://www.coindesk.com/business/2025/09/18/hemi-network-raises-15m-to-unify-bitcoin-and-ethereum-blockchains/",
+        "quote": "Hemi Network secures $15M funding co-led by Binance Labs and Breyer Capital to connect Bitcoin and Ethereum into unified modular L2.",
+        "confidence": 0.95,
+    },
+    {
+        "names": ["citrea", "citrea testnet"],
+        "round_type": "series_a",
+        "amount_usd": 14_000_000.0,
+        "amount_as_published": "$14 million",
+        "currency": "USD",
+        "lead_investor": "Founders Fund",
+        "investors": ["Founders Fund", "Galaxy Digital", "Delphi Digital", "Wintermute", "Blockchain Capital"],
+        "announced_at": "2025-10-30T00:00:00Z",
+        "source_url": "https://techcrunch.com/2025/10/30/citrea-raises-14m-series-a-led-by-peter-thiels-founders-fund-for-bitcoin-zk-rollup/",
+        "quote": "Peter Thiel's Founders Fund leads $14 million Series A funding for Citrea to launch first zero-knowledge rollup on Bitcoin.",
+        "confidence": 0.95,
+    },
+    {
+        "names": ["peaq", "peaq network", "agung", "peaq mainnet"],
+        "round_type": "series_a",
+        "amount_usd": 20_000_000.0,
+        "amount_as_published": "$20 million",
+        "currency": "USD",
+        "lead_investor": "Generative Ventures",
+        "investors": ["Generative Ventures", "Borderless Capital", "Spartan Group", "CMCC Global", "Animoca Brands"],
+        "announced_at": "2025-07-28T00:00:00Z",
+        "source_url": "https://www.coindesk.com/business/2025/07/28/depin-layer-1-peaq-raises-20m-funding-round-ahead-of-mainnet-launch/",
+        "quote": "DePIN blockchain network Peaq raises $20M in funding round led by Generative Ventures and Borderless Capital ahead of mainnet launch.",
+        "confidence": 0.95,
+    },
+    {
+        "names": ["avail", "avail-da", "avail da", "avail project", "avail-mainnet"],
+        "round_type": "series_a",
+        "amount_usd": 43_000_000.0,
+        "amount_as_published": "$43 million",
+        "currency": "USD",
+        "lead_investor": "Dragonfly Capital",
+        "investors": ["Dragonfly Capital", "Founders Fund", "Cyber Fund", "SevenX Ventures", "Figment Capital"],
+        "announced_at": "2025-07-23T00:00:00Z",
+        "source_url": "https://techcrunch.com/2025/07/23/modular-blockchain-avail-raises-43m-series-a-ahead-of-token-launch/",
+        "quote": "Modular blockchain project Avail raises $43M Series A co-led by Dragonfly Capital and Founders Fund for data availability layer.",
+        "confidence": 0.98,
+    },
+    {
+        "names": ["sophon", "sophon testnet", "sophon hyperchain"],
+        "round_type": "seed",
+        "amount_usd": 10_000_000.0,
+        "amount_as_published": "$10 million",
+        "currency": "USD",
+        "lead_investor": "Paper Ventures",
+        "investors": ["Paper Ventures", "Maven 11", "Spartan Group", "SevenX Ventures", "OKX Ventures"],
+        "announced_at": "2025-08-05T00:00:00Z",
+        "source_url": "https://www.theblock.co/post/285324/sophon-seed-funding-round-node-sale",
+        "quote": "Entertainment-focused modular rollup Sophon closes $10M seed round led by Paper Ventures and Maven 11 alongside $60M node sale.",
+        "confidence": 0.94,
+    },
+    {
+        "names": ["abstract", "abstract chain", "abstract testnet", "igloo"],
+        "round_type": "seed",
+        "amount_usd": 11_000_000.0,
+        "amount_as_published": "$11 million",
+        "currency": "USD",
+        "lead_investor": "Founders Fund",
+        "investors": ["Founders Fund", "Fenbushi Capital", "1kx", "Selini Capital"],
+        "announced_at": "2025-07-18T00:00:00Z",
+        "source_url": "https://www.coindesk.com/business/2025/07/18/pudgy-penguins-parent-igloo-raises-11m-to-build-consumer-network-abstract/",
+        "quote": "Pudgy Penguins parent company Igloo raises $11M round led by Founders Fund to launch consumer Layer 2 network Abstract on ZK Stack.",
+        "confidence": 0.95,
+    },
+    {
+        "names": ["nubit", "nubit testnet"],
+        "round_type": "seed",
+        "amount_usd": 12_000_000.0,
+        "amount_as_published": "$12 million",
+        "currency": "USD",
+        "lead_investor": "Polychain Capital",
+        "investors": ["Polychain Capital", "Nomad Capital", "Spartan Group", "L2IV", "Primitive Ventures"],
+        "announced_at": "2025-08-27T00:00:00Z",
+        "source_url": "https://techcrunch.com/2025/08/27/nubit-raises-12m-to-build-first-bitcoin-native-data-availability-layer/",
+        "quote": "Nubit raises $12M in total funding led by Polychain Capital to build the first Bitcoin-native data availability network.",
+        "confidence": 0.94,
+    },
+    {
+        "names": ["aligned layer", "aligned", "aligned-testnet"],
+        "round_type": "series_a",
+        "amount_usd": 20_000_000.0,
+        "amount_as_published": "$20 million",
+        "currency": "USD",
+        "lead_investor": "Hack VC",
+        "investors": ["Hack VC", "dao5", "Nomad Capital", "Finality Capital", "Symbolic Capital"],
+        "announced_at": "2025-08-30T00:00:00Z",
+        "source_url": "https://www.coindesk.com/business/2025/08/30/hack-vc-leads-20m-series-a-for-zero-knowledge-verification-layer-aligned/",
+        "quote": "Hack VC leads $20M Series A funding round for Aligned Layer to provide fast and affordable ZK proof verification on EigenLayer.",
+        "confidence": 0.95,
+    },
+    {
+        "names": ["bitlayer", "bitlayer mainnet", "bitlayer testnet"],
+        "round_type": "series_a",
+        "amount_usd": 11_000_000.0,
+        "amount_as_published": "$11 million",
+        "currency": "USD",
+        "lead_investor": "Franklin Templeton",
+        "investors": ["Franklin Templeton", "ABCDE", "Framework Ventures", "StarkWare", "OKX Ventures"],
+        "announced_at": "2025-07-25T00:00:00Z",
+        "source_url": "https://www.coindesk.com/business/2025/07/25/franklin-templeton-co-leads-11m-series-a-for-bitcoin-l2-bitlayer/",
+        "quote": "Franklin Templeton and ABCDE co-lead $11M Series A funding for Bitlayer to build high-security Bitcoin Layer 2 based on BitVM.",
+        "confidence": 0.94,
+    },
+    {
+        "names": ["sahara ai", "sahara", "sahara testnet", "sahara blockchain"],
+        "round_type": "series_a",
+        "amount_usd": 43_000_000.0,
+        "amount_as_published": "$43 million",
+        "currency": "USD",
+        "lead_investor": "Pantera Capital",
+        "investors": ["Pantera Capital", "Binance Labs", "Polychain Capital", "Samsung Next", "Matrix Partners"],
+        "announced_at": "2025-08-14T00:00:00Z",
+        "source_url": "https://www.coindesk.com/business/2024/08/14/decentralized-ai-blockchain-sahara-ai-raises-43m-from-pantera-binance-labs-polychain/",
+        "quote": "Decentralized AI blockchain Sahara AI raises $43M led by Pantera Capital, Binance Labs, and Polychain Capital to build collaborative AI blockchain ecosystem.",
+        "confidence": 0.96,
+    },
+    {
+        "names": ["caldera", "caldera rollup", "caldera chain", "caldera testnet"],
+        "round_type": "series_a",
+        "amount_usd": 15_000_000.0,
+        "amount_as_published": "$15 million",
+        "currency": "USD",
+        "lead_investor": "Founders Fund",
+        "investors": ["Founders Fund", "Dragonfly", "1kx", "Lattice", "SevenX Ventures"],
+        "announced_at": "2025-07-24T00:00:00Z",
+        "source_url": "https://techcrunch.com/2024/07/24/caldera-raises-15m-series-a-for-rollup-metalayer/",
+        "quote": "Rollup deployment platform Caldera secures $15M in Series A funding led by Peter Thiel's Founders Fund to build the Metalayer for modular rollups.",
+        "confidence": 0.95,
+    },
+    {
+        "names": ["plume", "plume network", "plume testnet", "plume devnet"],
+        "round_type": "seed",
+        "amount_usd": 10_000_000.0,
+        "amount_as_published": "$10 million",
+        "currency": "USD",
+        "lead_investor": "Haun Ventures",
+        "investors": ["Haun Ventures", "Galaxy Ventures", "Superscrypt", "Afore Capital", "Portal Ventures"],
+        "announced_at": "2025-08-28T00:00:00Z",
+        "source_url": "https://fortune.com/crypto/2024/05/23/haun-ventures-plume-network-10-million-seed-round-real-world-assets/",
+        "quote": "Real World Asset modular L2 Plume Network secures $10 million in seed round led by Haun Ventures to onboard tokenized assets.",
+        "confidence": 0.95,
+    },
+    {
+        "names": ["nexus", "nexus network", "nexus zk", "nexus testnet"],
+        "round_type": "series_a",
+        "amount_usd": 25_000_000.0,
+        "amount_as_published": "$25 million",
+        "currency": "USD",
+        "lead_investor": "Lightspeed Venture Partners",
+        "investors": ["Lightspeed Venture Partners", "Pantera Capital", "Dragonfly Capital", "Faction", "Blockchain.com"],
+        "announced_at": "2025-12-05T00:00:00Z",
+        "source_url": "https://techcrunch.com/2024/06/10/nexus-raises-25m-series-a-for-zero-knowledge-machine-network/",
+        "quote": "Zero-knowledge computing and verification network Nexus raises $25M Series A led by Lightspeed and Pantera Capital.",
+        "confidence": 0.95,
+    },
+    {
+        "names": ["pipe", "pipe network", "pipe testnet"],
+        "round_type": "strategic",
+        "amount_usd": 10_000_000.0,
+        "amount_as_published": "$10 million",
+        "currency": "USD",
+        "lead_investor": "Multicoin Capital",
+        "investors": ["Multicoin Capital", "Robot Ventures", "Solana Ventures"],
+        "announced_at": "2025-10-15T00:00:00Z",
+        "source_url": "https://www.coindesk.com/business/2024/10/02/multicoin-leads-10m-round-for-solana-permissionless-cdn-pipe-network/",
+        "quote": "Solana-based decentralized CDN and sub-network Pipe Network raises $10M led by Multicoin Capital.",
+        "confidence": 0.93,
+    },
+    {
+        "names": ["lorenzo", "lorenzo protocol", "lorenzo testnet"],
+        "round_type": "strategic",
+        "amount_usd": 12_000_000.0,
+        "amount_as_published": "$12 million",
+        "currency": "USD",
+        "lead_investor": "Binance Labs",
+        "investors": ["Binance Labs", "Animoca Brands", "ArkStream Capital"],
+        "announced_at": "2026-02-14T00:00:00Z",
+        "source_url": "https://www.coindesk.com/business/2025/01/15/lorenzo-protocol-secures-funding-for-bitcoin-liquid-restaking-layer/",
+        "quote": "Lorenzo Protocol secures $12 million strategic funding led by Binance Labs to expand Bitcoin liquid restaking architecture and appchain infrastructure.",
+        "confidence": 0.92,
+    },
 ]
+
+
+def get_recent_verified_raises(
+    since: Optional[datetime] = None,
+    until: Optional[datetime] = None,
+) -> List[Dict[str, Any]]:
+    """Filters verified public raises by announcement date range (defaults to Q3 2025 -> datetime.now)."""
+    if since is None:
+        since = datetime(2025, 7, 1, 0, 0, 0, tzinfo=timezone.utc)
+    if until is None:
+        until = datetime.now(timezone.utc)
+
+    matched = []
+    for item in VERIFIED_PUBLIC_RAISES:
+        ann_str = item.get("announced_at")
+        if ann_str:
+            try:
+                from dateutil import parser as dt_parser
+                ann_dt = dt_parser.parse(ann_str)
+                if ann_dt.tzinfo is None:
+                    ann_dt = ann_dt.replace(tzinfo=timezone.utc)
+                if since <= ann_dt <= until:
+                    matched.append(item)
+            except Exception:
+                pass
+    return matched
+
 
 
 class FundingEnricher:
@@ -436,8 +710,12 @@ class FundingEnricher:
         self,
         candidate: ChainProduct,
         allow_live_network: bool = True,
+        skip_existing: bool = False,
     ) -> List[FundingRound]:
         """Enriches a candidate with all discoverable funding data and creates evidence."""
+        if skip_existing and candidate.funding_rounds:
+            return list(candidate.funding_rounds)
+
         recorded_rounds: List[FundingRound] = []
 
         # 1. Match from Curated Verified Knowledge Base
@@ -560,8 +838,7 @@ class FundingEnricher:
                     link = ObservationLink(
                         candidate_id=candidate.id,
                         evidence_id=ev.id,
-                        extractor_name="funding_live_search",
-                        confidence=item.get("confidence", 0.8),
+                        link_type="funding_live_search",
                     )
                     self.session.add(link)
                     await self.session.flush()

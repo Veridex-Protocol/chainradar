@@ -10,6 +10,15 @@ export interface Candidate {
   last_verified_at: string | null;
   africa_label: string;
   africa_score: number;
+  funding_rounds_count?: number;
+  total_funding_usd?: number;
+  latest_funding?: {
+    round_type: string;
+    amount_usd: number | null;
+    amount_as_published: string | null;
+    lead_investor: string | null;
+    announced_at: string | null;
+  } | null;
   scores: {
     outreach_score: number;
     radar_score: number;

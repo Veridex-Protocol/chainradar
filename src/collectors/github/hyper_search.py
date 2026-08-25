@@ -32,6 +32,8 @@ QUERY_PACKS = [
     ("substrate", '(polkadot-sdk OR substrate OR parachain) (testnet OR chain-spec) in:readme pushed:>={DATE}'),
     ("svm_move_cairo_fuel", '(SVM OR Move OR Cairo OR FuelVM) (testnet OR mainnet OR chain) in:readme pushed:>={DATE}'),
     ("africa_intent", '(Africa OR Nigeria OR Kenya OR Ghana OR Rwanda) (blockchain OR rollup OR chain) in:readme pushed:>={DATE}'),
+    ("latest_funded_chains", '(funding OR "seed round" OR "series a" OR "series b" OR "raised" OR "backed by") (testnet OR mainnet OR chain OR rollup OR "layer 2") in:readme pushed:>={DATE}'),
+    ("recent_chains_q3_2025", '(blockchain OR rollup OR appchain OR testnet) in:name,description,readme created:>={DATE_Q3_2025} archived:false'),
 ]
 
 
@@ -42,6 +44,9 @@ class GitHubHyperSearchCollector:
     def __init__(self):
         self.limiter = TokenBucketLimiter(requests_per_minute=30, burst=5)
 
+    def next_cursor(self, batch: FetchBatch) -> Cursor:
+        return batch.next_cursor or Cursor(source_id=self.source_id, last_seen_timestamp=datetime.now(timezone.utc))
+
     async def fetch(self, cursor: Cursor, budget: RateBudget) -> FetchBatch:
         headers = {
             "Accept": "application/vnd.github.v3+json",
@@ -50,10 +55,12 @@ class GitHubHyperSearchCollector:
         if settings.GITHUB_TOKEN:
             headers["Authorization"] = f"token {settings.GITHUB_TOKEN}"
 
-        # Compute 72h sliding window date
+        # Compute dynamic dates (sliding window and Q3 2025 start up to date.now)
         now = datetime.now(timezone.utc)
         window_start = now - timedelta(hours=settings.GITHUB_SEARCH_OVERLAP_HOURS)
         date_str = window_start.strftime("%Y-%m-%d")
+        q3_2025_str = "2025-07-01"
+        now_str = now.strftime("%Y-%m-%d")
 
         items: List[RawItem] = []
         
@@ -61,7 +68,12 @@ class GitHubHyperSearchCollector:
             if not await self.limiter.acquire(1):
                 break
 
-            query = query_template.replace("{DATE}", date_str)
+            query = (
+                query_template
+                .replace("{DATE}", date_str)
+                .replace("{DATE_Q3_2025}", q3_2025_str)
+                .replace("{DATE_NOW}", now_str)
+            )
             search_url = f"https://api.github.com/search/repositories?q={query}&sort=updated&order=desc&per_page=5"
 
             try:

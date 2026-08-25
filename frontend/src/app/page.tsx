@@ -18,6 +18,7 @@ export default function Home() {
   const [searchQuery, setSearchQuery] = useState<string>("");
   const [selectedStack, setSelectedStack] = useState<string>("");
   const [selectedAfrica, setSelectedAfrica] = useState<string>("");
+  const [selectedFunding, setSelectedFunding] = useState<string>("");
   const [candidates, setCandidates] = useState<Candidate[]>([]);
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [selectedCandidateId, setSelectedCandidateId] = useState<string | null>(null);
@@ -32,6 +33,13 @@ export default function Home() {
       if (searchQuery) params.append("q", searchQuery);
       if (selectedStack) params.append("stack_family", selectedStack);
       if (selectedAfrica) params.append("africa_intent", selectedAfrica);
+      if (selectedFunding === "recent") {
+        params.append("recent_funding", "true");
+      } else if (selectedFunding === "funded") {
+        params.append("has_funding", "true");
+      } else if (selectedFunding === "unfunded") {
+        params.append("has_funding", "false");
+      }
 
       const res = await fetch(`/api/candidates?${params.toString()}`);
       const data = await res.json();
@@ -45,7 +53,7 @@ export default function Home() {
 
   useEffect(() => {
     fetchCandidates();
-  }, [selectedStack, selectedAfrica]);
+  }, [selectedStack, selectedAfrica, selectedFunding]);
 
   // Debounced search
   useEffect(() => {
@@ -91,6 +99,8 @@ export default function Home() {
         setSelectedStack={setSelectedStack}
         selectedAfrica={selectedAfrica}
         setSelectedAfrica={setSelectedAfrica}
+        selectedFunding={selectedFunding}
+        setSelectedFunding={setSelectedFunding}
         onRefresh={fetchCandidates}
         isLoading={isLoading}
       />
