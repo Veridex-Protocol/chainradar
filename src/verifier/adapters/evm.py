@@ -57,7 +57,11 @@ class EVMAdapter:
 
     async def head(self, endpoint: str) -> HeadObservation:
         block_num_hex = await self._rpc_call(endpoint, "eth_blockNumber")
-        height = int(block_num_hex, 16) if isinstance(block_num_hex, str) else int(block_num_hex)
+        height = 0
+        if isinstance(block_num_hex, str) and block_num_hex.startswith("0x"):
+            height = int(block_num_hex, 16)
+        elif block_num_hex is not None:
+            height = int(block_num_hex)
         return HeadObservation(
             block_height=height,
             observed_at=datetime.now(timezone.utc),

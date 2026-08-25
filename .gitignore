@@ -50,3 +50,5 @@ bun.lockb
 *.swp
 *.swo
 .gemini/
+frontend/AGENTS.md
+frontend/CLAUDE.md

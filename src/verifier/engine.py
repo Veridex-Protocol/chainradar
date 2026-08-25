@@ -135,7 +135,10 @@ class VerifierEngine:
         head2, fp2 = obs2
         
         advancing = head2.block_height > head1.block_height
-        identity_stable = (fp1 == fp2) if (fp1 and fp2) else True
+        # Fail closed. A missing fingerprint means the identity is *unknown*,
+        # not stable; treating it as stable would let an endpoint that stops
+        # reporting its chain ID keep a verified badge it no longer earns.
+        identity_stable = bool(fp1 and fp2 and fp1 == fp2)
         return advancing, identity_stable
 
 

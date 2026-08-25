@@ -187,6 +187,13 @@ class AppSettings(BaseSettings):
     # uniqueness key on the evidence ledger (spec 21).
     VERIFY_EVIDENCE_BUCKET_MINUTES: int = 60
     HUMAN_APPROVAL_BEFORE_OUTREACH: bool = True
+    # Kill switch for all outbound verification traffic during an incident.
+    VERIFIER_ENABLED: bool = True
+    # A1/A2 require project-origin evidence; see spec 11 wording rule.
+    africa_requires_evidence_for_explicit_intent: bool = True
+    AFRICA_PRIORITY_MARKETS: List[str] = Field(
+        default_factory=lambda: ["NG", "KE", "GH", "ZA", "RW", "EG", "MA", "UG", "TZ", "SN", "CI"]
+    )
 
     # Scoring & Weights
     SCORE_WEIGHTS: ScoreWeights = Field(default_factory=ScoreWeights)
@@ -209,6 +216,9 @@ class Lexicons:
         self.country_by_name: Dict[str, Dict[str, Any]] = {}
         self.country_by_iso2: Dict[str, Dict[str, Any]] = {}
         self.country_by_iso3: Dict[str, Dict[str, Any]] = {}
+        # Surface forms that require corroborating African context before they
+        # count as a geographic match (see countries.json `_note`).
+        self.ambiguous_surface_forms: Dict[str, str] = {}
         self.regions: Dict[str, List[str]] = {}
         self.economic_blocs: Dict[str, Dict[str, Any]] = {}
         self.priority_hubs: List[Dict[str, Any]] = []
@@ -237,6 +247,8 @@ class Lexicons:
                     self.country_by_iso3[c["iso3"].upper()] = c
                     for alias in c.get("aliases", []):
                         self.country_by_name[alias.lower()] = c
+                    for ambiguous in c.get("ambiguous_aliases", []):
+                        self.ambiguous_surface_forms[ambiguous.lower()] = c["name"]
 
         # Regions and Blocs
         rb_file = lexicon_dir / "regions_and_blocs.json"
@@ -364,6 +376,14 @@ def _apply_yaml_overlay(base: "AppSettings", doc: Dict[str, Any]) -> "AppSetting
     for key, val in mapping.items():
         if val is not None:
             values[key] = val
+
+    africa = doc.get("africa", {}) or {}
+    if "require_evidence_for_explicit_intent" in africa:
+        values["africa_requires_evidence_for_explicit_intent"] = africa[
+            "require_evidence_for_explicit_intent"
+        ]
+    if africa.get("priority_markets"):
+        values["AFRICA_PRIORITY_MARKETS"] = africa["priority_markets"]
 
     if doc.get("database", {}).get("url"):
         values["DATABASE_URL"] = doc["database"]["url"]

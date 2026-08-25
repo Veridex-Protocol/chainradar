@@ -204,14 +204,14 @@ def run_scan(
     from src.collectors.registries.chainid_network import ChainIdNetworkCollector
     from src.collectors.registries.superchain import SuperchainCollector
     from src.collectors.registries.cosmos_registry import CosmosRegistryCollector
-    from src.collectors.web_news.rss_sitemaps import RSSSitemapsCollector
+    from src.collectors.web_news.rss_sitemaps import RSSFeedsCollector
 
     collectors_map = {
         "ethereum_lists": EthereumListsCollector(),
         "chainid_network": ChainIdNetworkCollector(),
         "superchain_registry": SuperchainCollector(),
         "cosmos_chain_registry": CosmosRegistryCollector(),
-        "rss_sitemaps": RSSSitemapsCollector(),
+        "rss_sitemaps": RSSFeedsCollector(),
     }
 
     async def _scan():
