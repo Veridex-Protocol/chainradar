@@ -28,6 +28,7 @@ from src.storage.models import (
     ChainProduct,
     Contact,
     EvidenceEvent,
+    FundingRound,
     Network,
     NetworkIncarnation,
     ObservationLink,
@@ -207,6 +208,7 @@ class Repository:
                 selectinload(ChainProduct.signals),
                 selectinload(ChainProduct.opportunities),
                 selectinload(ChainProduct.contacts),
+                selectinload(ChainProduct.funding_rounds),
                 selectinload(ChainProduct.observation_links).selectinload(ObservationLink.evidence),
             )
             .where(ChainProduct.id == candidate_id)
@@ -222,6 +224,7 @@ class Repository:
                 selectinload(ChainProduct.networks).selectinload(Network.incarnations),
                 selectinload(ChainProduct.assessment),
                 selectinload(ChainProduct.score),
+                selectinload(ChainProduct.funding_rounds),
             )
             .where(ChainProduct.slug == slug)
         )
@@ -239,6 +242,7 @@ class Repository:
                 selectinload(ChainProduct.networks).selectinload(Network.incarnations),
                 selectinload(ChainProduct.assessment),
                 selectinload(ChainProduct.score),
+                selectinload(ChainProduct.funding_rounds),
             )
         )
         if caip2:
@@ -290,6 +294,7 @@ class Repository:
                 selectinload(ChainProduct.signals),
                 selectinload(ChainProduct.opportunities),
                 selectinload(ChainProduct.contacts),
+                selectinload(ChainProduct.funding_rounds),
             )
             # Join the CURRENT snapshot, not the history. Score snapshots are
             # append-only, so joining on candidate_id multiplies each candidate
@@ -440,3 +445,73 @@ class Repository:
         self.session.add(log)
         await self.session.flush()
         return log
+
+    # --------------------------------------------------------------------------
+    # Funding Operations (Spec 13: Capital)
+    # --------------------------------------------------------------------------
+
+    async def record_funding_round(
+        self,
+        candidate_id: str,
+        round_type: str,
+        amount_usd: Optional[float],
+        amount_as_published: Optional[str],
+        currency: str,
+        investors: List[str],
+        lead_investor: Optional[str],
+        source_url: str,
+        quote: Optional[str] = None,
+        confidence: float = 0.8,
+        announced_at: Optional[datetime] = None,
+        org_id: Optional[str] = None,
+        evidence_id: Optional[str] = None,
+    ) -> FundingRound:
+        """Records an announced funding event idempotently."""
+        # Deduplication check
+        stmt = select(FundingRound).where(
+            FundingRound.candidate_id == candidate_id,
+            FundingRound.round_type == round_type,
+            FundingRound.amount_as_published == amount_as_published,
+        )
+        if announced_at:
+            stmt = stmt.where(FundingRound.announced_at == announced_at)
+        existing = (await self.session.execute(stmt)).scalars().first()
+        if existing:
+            # Update fields if new data has higher confidence
+            if confidence > existing.confidence:
+                existing.confidence = confidence
+                existing.investors = list(dict.fromkeys((existing.investors or []) + investors))
+                if lead_investor and not existing.lead_investor:
+                    existing.lead_investor = lead_investor
+                if quote and not existing.quote:
+                    existing.quote = quote
+                await self.session.flush()
+            return existing
+
+        round_obj = FundingRound(
+            candidate_id=candidate_id,
+            org_id=org_id,
+            round_type=round_type,
+            amount_usd=amount_usd,
+            amount_as_published=amount_as_published,
+            currency=currency,
+            investors=investors,
+            lead_investor=lead_investor,
+            source_url=source_url,
+            evidence_id=evidence_id,
+            quote=quote,
+            confidence=confidence,
+            announced_at=announced_at,
+        )
+        self.session.add(round_obj)
+        await self.session.flush()
+        return round_obj
+
+    async def get_funding_rounds_for_candidate(self, candidate_id: str) -> List[FundingRound]:
+        stmt = (
+            select(FundingRound)
+            .where(FundingRound.candidate_id == candidate_id)
+            .order_by(desc(FundingRound.announced_at))
+        )
+        result = await self.session.execute(stmt)
+        return list(result.scalars().all())

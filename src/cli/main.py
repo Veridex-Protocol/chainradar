@@ -4,8 +4,11 @@ from __future__ import annotations
 
 import asyncio
 import json
+import logging
 import sys
 from datetime import datetime, timezone
+
+logger = logging.getLogger("chainradar.cli")
 from pathlib import Path
 from typing import Optional
 import typer
@@ -288,6 +291,76 @@ def run_scan(
     asyncio.run(_scan())
 
 
+@app.command("enrich")
+def enrich_candidates(
+    source: str = typer.Option("funding", "--source", "-s", help="Enrichment source: funding, activity, all"),
+    candidate: Optional[str] = typer.Option(None, "--candidate", "-c", help="Specific candidate slug/name to enrich"),
+    limit: int = typer.Option(100, "--limit", "-n", help="Max candidates to enrich"),
+    live_search: bool = typer.Option(True, "--live/--no-live", help="Perform live web & news queries"),
+):
+    """Enrich blockchain candidates with verifiable public funding rounds and live activity data."""
+    async def _enrich():
+        from src.enrichment.funding import FundingEnricher
+        
+        console.print(f"[bold cyan]🔍 Starting ChainRadar Funding & Activity Enrichment Engine...[/bold cyan]")
+        
+        async with db_manager.session() as session:
+            repo = Repository(session)
+            enricher = FundingEnricher(session)
+            
+            if candidate:
+                c = await repo.find_candidate_by_slug(candidate)
+                if not c:
+                    # Try search
+                    candidates = await repo.list_candidates(search_query=candidate, limit=1)
+                    c = candidates[0] if candidates else None
+                if not c:
+                    console.print(f"[bold red]✗ Candidate '{candidate}' not found in database.[/bold red]")
+                    return
+                candidates_to_enrich = [c]
+            else:
+                candidates_to_enrich = await repo.list_candidates(limit=limit)
+
+            total_enriched = 0
+            total_rounds = 0
+            total_usd = 0.0
+
+            with console.status("[bold green]Extracting & verifying public funding data...") as status:
+                for idx, c in enumerate(candidates_to_enrich, 1):
+                    status.update(f"[bold green]({idx}/{len(candidates_to_enrich)}) Processing {c.canonical_name}...[/bold green]")
+                    try:
+                        rounds = await enricher.enrich_candidate(c, allow_live_network=live_search)
+                        if rounds:
+                            await session.commit()
+                            total_enriched += 1
+                            total_rounds += len(rounds)
+                            for r in rounds:
+                                if r.amount_usd:
+                                    total_usd += r.amount_usd
+                                lead_str = f" led by [bold yellow]{r.lead_investor}[/bold yellow]" if r.lead_investor else ""
+                                amount_str = f"[bold green]{r.amount_as_published}[/bold green]" if r.amount_as_published else "undisclosed amount"
+                                console.print(
+                                    f"  ✓ [bold white]{c.canonical_name}[/bold white]: "
+                                    f"Recorded {r.round_type.upper()} round ({amount_str}{lead_str})"
+                                )
+                                console.print(f"    [dim]Source: {r.source_url}[/dim]")
+                                if r.quote:
+                                    console.print(f"    [italic dim]\"{r.quote[:100]}...\"[/italic dim]")
+                    except Exception as exc:
+                        await session.rollback()
+                        logger.warning(f"Error enriching {c.canonical_name}: {exc}")
+
+            usd_fmt = f"${total_usd/1_000_000_000:.2f}B" if total_usd >= 1_000_000_000 else f"${total_usd/1_000_000:.1f}M" if total_usd >= 1_000_000 else f"${total_usd:,.0f}"
+            console.print(
+                f"\n[bold green]Enrichment complete![/bold green] "
+                f"Enriched [bold cyan]{total_enriched}[/bold cyan] chains with "
+                f"[bold cyan]{total_rounds}[/bold cyan] verified funding rounds "
+                f"([bold yellow]{usd_fmt}[/bold yellow] total disclosed capital)."
+            )
+
+    asyncio.run(_enrich())
+
+
 @app.command("list")
 def list_candidates(
     state: Optional[str] = typer.Option(None, "--state", "-s", help="Filter by state: HOT, QUALIFIED, RADAR"),
@@ -343,15 +416,16 @@ def list_candidates(
             show_lines=False,
             border_style="dim cyan",
         )
-        table.add_column("#", style="dim", width=5, justify="right")
-        table.add_column("Chain Name", style="bold white", max_width=26, no_wrap=True)
-        table.add_column("Chain ID", style="cyan", width=9, justify="right")
-        table.add_column("Stack", style="blue", width=8)
-        table.add_column("Stage", style="magenta", width=12)
+        table.add_column("#", style="dim", width=4, justify="right")
+        table.add_column("Chain Name", style="bold white", max_width=24, no_wrap=True)
+        table.add_column("Chain ID", style="cyan", width=8, justify="right")
+        table.add_column("Stack", style="blue", width=7)
+        table.add_column("Stage", style="magenta", width=11)
         table.add_column("Africa", width=6, justify="center")
-        table.add_column("Activity", width=9, justify="center")
-        table.add_column("First Seen", style="dim", width=10)
-        table.add_column("Verified", style="dim", width=10)
+        table.add_column("Activity", width=8, justify="center")
+        table.add_column("Raised", justify="right", style="bold green", width=9)
+        table.add_column("Raised On", style="dim", width=10)
+        table.add_column("Lead Investor", style="yellow", max_width=16, no_wrap=True)
         table.add_column("Outreach", justify="right", style="bold red", width=8)
         table.add_column("Radar", justify="right", style="cyan", width=6)
         table.add_column("State", justify="center", width=9)
@@ -364,13 +438,6 @@ def list_candidates(
             "S4_mainnet_announced": "S4 Announced",
             "S5_early_mainnet": "S5 Mainnet",
             "S6_established_archived": "S6 Establ.",
-        }
-        activity_style = {
-            "active": ("bold green", "● active"),
-            "slowing": ("yellow", "◐ slowing"),
-            "dormant": ("dim red", "○ dormant"),
-            "dead": ("red", "✗ dead"),
-            "unknown": ("dim", "? unknown"),
         }
 
         for idx, c in enumerate(candidates, offset + 1):
@@ -395,15 +462,9 @@ def list_candidates(
             obs_count = len(c.observation_links) if c.observation_links else 0
             net_count = len(c.networks) if c.networks else 0
             has_rpc = any(n.rpc_urls for n in (c.networks or []))
-            has_explorer = any(n.explorer_urls for n in (c.networks or []))
             is_verified = bool(c.last_verified_at)
 
-            # Compute an activity score from 0-5 based on concrete signals
-            activity_pts = min(obs_count, 2)  # 0-2 pts for evidence
-            activity_pts += min(net_count, 1)  # 0-1 pts for networks
-            activity_pts += (1 if has_rpc else 0)  # 1 pt for having RPC endpoints
-            activity_pts += (1 if is_verified else 0)  # 1 pt for verified liveness
-
+            activity_pts = min(obs_count, 2) + min(net_count, 1) + (1 if has_rpc else 0) + (1 if is_verified else 0)
             if activity_pts >= 4:
                 v_style, v_text = "bold green", "●●● high"
             elif activity_pts >= 3:
@@ -415,20 +476,37 @@ def list_candidates(
             else:
                 v_style, v_text = "dim", "—   none"
 
-            # Dates: first seen + last verified (more useful than funding until enrichment runs)
-            first_seen = c.first_seen_at.strftime("%Y-%m-%d") if c.first_seen_at else "—"
-            verified_at = c.last_verified_at.strftime("%Y-%m-%d") if c.last_verified_at else "—"
+            # Funding calculation from real FundingRound records
+            rounds = c.funding_rounds or []
+            total_disclosed = sum(float(r.amount_usd) for r in rounds if r.amount_usd)
+            latest_round = max(rounds, key=lambda r: r.announced_at or datetime.min.replace(tzinfo=timezone.utc)) if rounds else None
+
+            if total_disclosed > 0:
+                if total_disclosed >= 1_000_000_000:
+                    raised_str = f"${total_disclosed/1_000_000_000:.1f}B"
+                elif total_disclosed >= 1_000_000:
+                    raised_str = f"${total_disclosed/1_000_000:.1f}M"
+                else:
+                    raised_str = f"${total_disclosed/1_000:.0f}K"
+            elif rounds:
+                raised_str = "undisc."
+            else:
+                raised_str = "—"
+
+            raised_on = (latest_round.announced_at.strftime("%Y-%m-%d") if (latest_round and latest_round.announced_at) else "—")
+            lead_investor = (latest_round.lead_investor if (latest_round and latest_round.lead_investor) else ("—" if not rounds else (rounds[0].investors[0] if (rounds[0].investors) else "—")))
 
             table.add_row(
                 str(idx),
-                c.canonical_name[:26],
-                str(chain_id)[:9],
+                c.canonical_name[:24],
+                str(chain_id)[:8],
                 (c.stack_family or "").upper(),
                 stage_map.get(c.stage, c.stage or "—"),
                 f"[{a_color}]{a_short}[/{a_color}]",
                 f"[{v_style}]{v_text}[/{v_style}]",
-                first_seen,
-                verified_at,
+                raised_str,
+                raised_on,
+                str(lead_investor)[:16],
                 f"{outreach:.0f}",
                 f"{radar:.0f}",
                 f"[{state_c}]{state_val}[/{state_c}]",

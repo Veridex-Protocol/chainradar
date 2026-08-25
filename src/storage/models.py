@@ -154,6 +154,13 @@ class ChainProduct(Base):
     opportunities = relationship("Opportunity", back_populates="chain_product", cascade="all, delete-orphan", lazy="selectin")
     contacts = relationship("Contact", back_populates="chain_product", cascade="all, delete-orphan", lazy="selectin")
     observation_links = relationship("ObservationLink", back_populates="chain_product", cascade="all, delete-orphan", lazy="selectin")
+    funding_rounds = relationship(
+        "FundingRound",
+        foreign_keys="FundingRound.candidate_id",
+        cascade="all, delete-orphan",
+        lazy="selectin",
+        order_by="desc(FundingRound.announced_at)",
+    )
 
 
 class Network(Base):

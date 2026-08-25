@@ -312,6 +312,23 @@ class EntityResolver:
             await self._flag_weak_name_match(obs, org, candidate_id, evidence_id)
 
             is_new = True
+            # Resolve initial first_seen timestamp from claims or fallback to now
+            initial_first_seen = now
+            for date_key in ("first_seen_at", "published_at", "repo_created_at", "created_at", "first_commit_at", "registry_pr_opened_at"):
+                val = obs.claims.get(date_key)
+                if val:
+                    if isinstance(val, str):
+                        try:
+                            from dateutil import parser as dt_parser
+                            dt = dt_parser.parse(val)
+                            initial_first_seen = dt if dt.tzinfo else dt.replace(tzinfo=timezone.utc)
+                            break
+                        except Exception:
+                            pass
+                    elif isinstance(val, datetime):
+                        initial_first_seen = val if val.tzinfo else val.replace(tzinfo=timezone.utc)
+                        break
+
             chain_product = ChainProduct(
                 id=candidate_id,
                 organization_id=org.org_id,
@@ -326,7 +343,7 @@ class EntityResolver:
                 stack_details=obs.stack_details,
                 layer=obs.layer,
                 stage=self._enum_value(obs.stage),
-                first_seen_at=now,
+                first_seen_at=initial_first_seen,
             )
             self.session.add(chain_product)
             await self.session.flush()
