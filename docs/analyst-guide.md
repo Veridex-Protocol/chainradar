@@ -63,6 +63,26 @@ it into one continental number.
 
 ---
 
+## Funding & Capital Intelligence
+
+The evidence engine extracts and reconciles publicly verifiable funding rounds (`funding_rounds` table and Evidence Cards Section 4):
+
+| Element | Description | Verifiability Rule |
+|---|---|---|
+| `amount_usd` | Normalized numerical value in USD | Parsed directly from disclosed text; never estimated |
+| `amount_as_published` | Exact published string (e.g., "$40 million", "$225M") | Captured verbatim from announcement |
+| `lead_investor` | Primary VC leading the round (e.g., Paradigm, Hack VC, Founders Fund) | Extracted with multi-party confirmation |
+| `investors` | JSON array of all co-investors | Verbatim list of participating funds |
+| `quote` | Direct sentence from press release / SEC filing / article | Mandatory quote proving capital raise |
+| `source_url` | Origin publication (TechCrunch, CoinDesk, Bloomberg, PR Newswire) | Clickable URL for analyst audit |
+
+### Recency & Milestone Verification
+1. **Recency Prioritization**: Chains with recently announced funding (e.g. Q3 2025 – Present) automatically rank above older or dormant chains across the Web UI, interactive TUI (`chainradar tui`), and CLI (`chainradar list`).
+2. **First Seen Date (`first_seen_at`)**: Locked to the earliest verifiable milestone across git commits, testnet announcements, registry PRs, or block genesis.
+3. **Traceability**: An `EvidenceEvent` with `source_family="capital"` is linked to every funding round.
+
+---
+
 ## Workflow states
 
 ```
@@ -148,7 +168,7 @@ own — plenty of legitimate early chains have flaky public RPC.
 
 ## Daily checklist
 
-1. Review HOT alerts, and every identity mismatch, **before** contacting anyone.
+1. Review HOT alerts and recent raises (Q3 2025–Now), and every identity mismatch, **before** contacting anyone.
 2. Confirm the exact official evidence behind any A1/A2 label and the
    opportunity type. Read the quotes, not just the score.
 3. Check whether the project already has local staff, partners or community
@@ -159,6 +179,25 @@ own — plenty of legitimate early chains have flaky public RPC.
 5. Record the outcome, the next trigger date, and any suppression request.
 6. Triage source health and parser failures so coverage does not shrink
    silently.
+
+---
+
+## Tooling & Interfaces Guide
+
+### CLI Tool
+- `chainradar list` — View all candidates sorted by outreach state and funding recency.
+- `chainradar list --recent-funding` — Show only chains with verified funding from Q3 2025 to `date.now`.
+- `chainradar scan --source all` — Trigger live collector ingestion runs.
+- `chainradar enrich --source funding` — Run public funding round discovery and verifications.
+- `chainradar probe --candidate <slug>` — Perform safe SSRF-verified RPC status probes.
+- `chainradar report generate` — Compile daily morning analyst digest.
+
+### Terminal UI (TUI)
+- Run `chainradar tui` for a persistent full-screen real-time terminal dashboard with KPI funnels, discovery queues, and source health monitors.
+
+### Web Dashboard
+- Start FastAPI (`uvicorn src.api.main:app --port 8000`) and Next.js frontend (`cd frontend && npm run dev`).
+- Visit `http://localhost:3000` to browse queues, filter by Capital/Africa/Stack, explore the RPC verifier playground, and view full evidence cards.
 
 ---
 

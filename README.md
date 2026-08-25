@@ -25,23 +25,147 @@ Three consequences run through the whole codebase:
 
 ---
 
-## Quickstart
+## Quickstart & User Interfaces
+
+ChainRadar provides three interfaces: the **Web Interface (Next.js Dashboard & FastAPI)**, the **Terminal Dashboard (TUI)**, and the **CLI tool**.
+
+### 1. Environment & Database Setup
 
 ```bash
-# 1. Datastores (PostgreSQL 16 + Redis)
+# 1. Start Datastores (PostgreSQL 16 + Redis)
 docker compose up -d
 
-# 2. Python environment
-python -m venv .venv && .venv/bin/pip install -r requirements.txt
+# 2. Python environment & dependencies
+python3 -m venv .venv
+source .venv/bin/activate
+pip install -r requirements.txt
+pip install -e .
 
-# 3. Schema (the app refuses to start unless this is at head)
-.venv/bin/alembic upgrade head
+# 3. Apply database migrations
+alembic upgrade head
 
-# 4. Run
-.venv/bin/uvicorn src.api.main:app --reload
+# 4. (Optional) Seed demo/verified candidate dataset
+python scripts/seed_demo_data.py
 ```
 
-Open http://localhost:8000 for the analyst UI, `/docs` for the API.
+---
+
+### 2. Using the Web Dashboard
+
+The web interface provides an analyst command center with Funnel KPI overviews, HOT outreach queues, Africa intent matrix, interactive RPC verifier playground, and full Evidence Cards.
+
+```bash
+# Terminal 1: Start FastAPI backend (port 8000)
+source .venv/bin/activate
+uvicorn src.api.main:app --reload --port 8000
+
+# Terminal 2: Start Next.js frontend (port 3000)
+cd frontend
+npm install
+npm run dev
+```
+
+- **Frontend Application**: http://localhost:3000
+- **FastAPI Documentation & Swagger UI**: http://localhost:8000/docs
+
+#### Web Dashboard Highlights:
+- **Capital Filter**: Filter chains by `⚡ Recent Funding (Q3 2025–Now)`, `💰 All Funded`, or `🔍 Unfunded / Bootstrapped`.
+- **HOT Alerts & Qualified Leads**: View top-ranked chains sorted by qualification and recent capital raises.
+- **Africa Matrix**: 54-market geographic classification and regional intent breakdowns.
+- **Evidence Card Modal**: Full 10-section breakdown including why now, verified raises, lead investors, RPC endpoints, and team contacts.
+
+---
+
+### 3. Using the Interactive Terminal UI (TUI)
+
+Launch a real-time full-screen terminal dashboard:
+
+```bash
+source .venv/bin/activate
+chainradar tui
+```
+
+- Displays live discovery queues ranked by recency and recent capital raises (Q3 2025–Present).
+- Displays live pipeline table with **Raised**, **Raised On**, and **Lead Investor** columns.
+- Live source health indicators (`recent_funded`, `ethereum_lists`, `superchain_reg`, `funding_enricher`).
+- Press `Ctrl+C` to cleanly exit.
+
+---
+
+### 4. Using the CLI Tool (`chainradar`)
+
+The CLI offers comprehensive scanning, enrichment, reporting, and filtering.
+
+#### Listing & Interactive Pagination Navigation
+
+Candidates are automatically ranked with **recent funding (Q3 2025–Present) and active states first**:
+
+```bash
+# Interactive pagination (use 'n' next, 'p' prev, 'f' first, 'l' last, 'g' goto, 'q' quit)
+chainradar list
+
+# Filter for recent chains funded between Q3 2025 to Date.Now
+chainradar list --recent-funding
+
+# Filter by custom funding date range
+chainradar list --funding-since 2025-07-01
+
+# Filter by stack family (evm, cosmos, substrate, svm)
+chainradar list --stack evm
+
+# Filter by Africa intent label (A1, A2, A3, A4)
+chainradar list --africa A1
+
+# Filter by RPC-verified status only
+chainradar list --verified
+
+# Scripted non-interactive page view
+chainradar list --no-interactive --page 1 --page-size 25
+```
+
+#### Running Live Discovery Scans
+
+```bash
+# Discover latest chains funded from Q3 2025 to present
+chainradar scan --source recent_funded_chains
+
+# Scan all configured collectors
+chainradar scan --source all
+
+# Scan specific registry collector
+chainradar scan --source ethereum_lists
+chainradar scan --source superchain_registry
+chainradar scan --source cosmos_chain_registry
+```
+
+#### Capital & Activity Enrichment
+
+```bash
+# Enrich candidates with verified public raises (skips existing, focuses on un-enriched)
+chainradar enrich --limit 700
+
+# Fast KB-only enrichment without live search latency
+chainradar enrich --limit 700 --no-live
+
+# Target a specific candidate
+chainradar enrich --candidate "citrea"
+
+# Re-scan all candidates including already enriched
+chainradar enrich --all --limit 500
+```
+
+#### Probing RPC Endpoints & Generating Reports
+
+```bash
+# SSRF-safe probe of a specific candidate RPC
+chainradar probe --candidate "citrea"
+
+# Generate daily morning digest report
+chainradar report generate --format markdown
+
+# Export all active candidates to CSV
+chainradar report export
+```
 
 Whole stack in containers instead:
 
