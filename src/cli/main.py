@@ -193,6 +193,48 @@ def verify(
     asyncio.run(_probe())
 
 
+@app.command("scan")
+def run_scan(
+    source: str = typer.Option("all", "--source", "-s", help="Source ID to scan (e.g. 'ethereum_lists', 'chainid_network', 'superchain_registry', 'cosmos_chain_registry', 'all')"),
+):
+    """Run real collector discovery scans against live public registries and feeds."""
+    console.print(f"[bold cyan]Scanning live source:[/bold cyan] [green]{source}[/green]...")
+
+    from src.collectors.registries.ethereum_lists import EthereumListsCollector
+    from src.collectors.registries.chainid_network import ChainIdNetworkCollector
+    from src.collectors.registries.superchain import SuperchainCollector
+    from src.collectors.registries.cosmos_registry import CosmosRegistryCollector
+    from src.collectors.web_news.rss_sitemaps import RSSSitemapsCollector
+
+    collectors_map = {
+        "ethereum_lists": EthereumListsCollector(),
+        "chainid_network": ChainIdNetworkCollector(),
+        "superchain_registry": SuperchainCollector(),
+        "cosmos_chain_registry": CosmosRegistryCollector(),
+        "rss_sitemaps": RSSSitemapsCollector(),
+    }
+
+    async def _scan():
+        await db_manager.init_db()
+        async with db_manager.session() as session:
+            pipeline = IntelligencePipeline(session)
+            target_collectors = list(collectors_map.values()) if source == "all" else [collectors_map[source]]
+
+            total_items = 0
+            for col in target_collectors:
+                console.print(f"📡 Fetching live data from [cyan]{col.source_id}[/cyan]...")
+                try:
+                    count = await pipeline.run_collector_batch(col)
+                    console.print(f"[bold green]✓ {col.source_id}:[/bold green] Processed {count} real items")
+                    total_items += count
+                except Exception as e:
+                    console.print(f"[bold red]✗ {col.source_id} error:[/bold red] {e}")
+
+            console.print(f"\n[bold green]Scan complete! Total real items processed: {total_items}[/bold green]")
+
+    asyncio.run(_scan())
+
+
 @app.command("list")
 def list_candidates(
     state: Optional[str] = typer.Option(None, "--state", "-s", help="Filter by state: HOT, QUALIFIED, RADAR"),
@@ -204,11 +246,11 @@ def list_candidates(
             repo = Repository(session)
             candidates = await repo.list_candidates(
                 state=state.upper() if state else None,
-                query=search,
+                search_query=search,
                 limit=50,
             )
 
-            table = Table(title="Blockchain Candidates", expand=True)
+            table = Table(title="Live Blockchain Candidates", expand=True)
             table.add_column("Name", style="bold white")
             table.add_column("Stage", style="magenta")
             table.add_column("Stack", style="blue")
@@ -220,16 +262,19 @@ def list_candidates(
             for c in candidates:
                 a_label = c.assessment.intent_label if c.assessment else "A4"
                 a_color = "red" if a_label.startswith("A1") else ("yellow" if a_label.startswith("A2") else "dim cyan")
-                state_c = "bold red" if c.score.state == "HOT" else ("bold yellow" if c.score.state == "QUALIFIED" else "cyan")
+                state_c = "bold red" if c.score and c.score.state == "HOT" else ("bold yellow" if c.score and c.score.state == "QUALIFIED" else "cyan")
+                outreach_score = c.score.outreach_score if c.score else 0.0
+                radar_score = c.score.radar_score if c.score else 0.0
+                state_val = c.score.state if c.score else "RADAR"
 
                 table.add_row(
                     c.canonical_name,
                     c.stage,
                     f"{c.stack_family.upper()}",
                     f"[{a_color}]{a_label}[/{a_color}]",
-                    f"{c.score.outreach_score:.0f}",
-                    f"{c.score.radar_score:.0f}",
-                    f"[{state_c}]{c.score.state}[/{state_c}]",
+                    f"{outreach_score:.0f}",
+                    f"{radar_score:.0f}",
+                    f"[{state_c}]{state_val}[/{state_c}]",
                 )
 
             console.print(table)

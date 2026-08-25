@@ -45,23 +45,6 @@ from tests.fixtures.sample_data import (
 )
 
 
-@pytest.fixture
-async def test_db():
-    engine = create_async_engine(
-        "sqlite+aiosqlite:///:memory:",
-        echo=False,
-        json_serializer=lambda obj: json.dumps(obj, default=str),
-    )
-    async with engine.begin() as conn:
-        await conn.run_sync(Base.metadata.create_all)
-    
-    session_factory = async_sessionmaker(bind=engine, class_=AsyncSession, expire_on_commit=False)
-    async with session_factory() as session:
-        yield session
-    
-    await engine.dispose()
-
-
 # 1. Test Registry Diff
 @pytest.mark.asyncio
 async def test_acceptance_1_registry_diff(test_db: AsyncSession):

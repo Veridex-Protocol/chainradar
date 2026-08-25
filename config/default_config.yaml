@@ -23,6 +23,7 @@ windows:
   nightly_backfill_days: 14
   rpc_liveness_recheck_seconds: 120
   dedup_window_hours: 24
+  evidence_dedup_bucket_minutes: 60
 
 africa:
   country_source: "iso3166_plus_aliases"

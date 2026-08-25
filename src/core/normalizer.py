@@ -5,7 +5,7 @@ from __future__ import annotations
 import re
 import unicodedata
 from urllib.parse import urlparse
-from typing import Optional
+from typing import Any, Optional
 
 
 LEGAL_SUFFIXES = [

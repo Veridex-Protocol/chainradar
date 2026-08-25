@@ -33,7 +33,16 @@ class ReportGenerator:
         self, session: AsyncSession, digest_type: str = "morning", save_to_disk: bool = True
     ) -> Dict[str, Any]:
         """Generates 07:30 WAT morning or 18:00 WAT evening digest."""
-        digest_data = await DigestGenerator.generate_digest(session, digest_type=digest_type)
+        payload = await DigestGenerator.generate_digest(session, digest_type=digest_type)
+        md_text = DigestGenerator.to_markdown(payload)
+
+        result: Dict[str, Any] = {
+            "title": payload.get("title", f"Ashinity Digest ({digest_type})"),
+            "digest_type": digest_type,
+            "markdown": md_text,
+            "payload": payload,
+            "saved_files": {},
+        }
         
         if save_to_disk:
             now_str = datetime.now(timezone.utc).strftime("%Y%m%d_%H%M%S")
@@ -42,19 +51,19 @@ class ReportGenerator:
             # Save Markdown
             md_path = self.digests_dir / f"{filename}.md"
             with open(md_path, "w", encoding="utf-8") as f:
-                f.write(digest_data["markdown"])
+                f.write(md_text)
 
             # Save JSON
             json_path = self.digests_dir / f"{filename}.json"
             with open(json_path, "w", encoding="utf-8") as f:
-                json.dump(digest_data["payload"], f, indent=2, default=str)
+                json.dump(payload, f, indent=2, default=str)
 
-            digest_data["saved_files"] = {
+            result["saved_files"] = {
                 "markdown": str(md_path),
                 "json": str(json_path),
             }
 
-        return digest_data
+        return result
 
     async def export_candidates_csv(self, session: AsyncSession) -> str:
         """Exports all active discovery candidates to a CSV spreadsheet report."""

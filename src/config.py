@@ -183,6 +183,9 @@ class AppSettings(BaseSettings):
     NIGHTLY_BACKFILL_DAYS: int = 14
     RPC_LIVENESS_RECHECK_SECONDS: int = 120
     DEDUP_WINDOW_HOURS: int = 24
+    # Width of the evidence dedup bucket; part of the three-column
+    # uniqueness key on the evidence ledger (spec 21).
+    VERIFY_EVIDENCE_BUCKET_MINUTES: int = 60
     HUMAN_APPROVAL_BEFORE_OUTREACH: bool = True
 
     # Scoring & Weights
@@ -356,6 +359,7 @@ def _apply_yaml_overlay(base: "AppSettings", doc: Dict[str, Any]) -> "AppSetting
         "NIGHTLY_BACKFILL_DAYS": windows.get("nightly_backfill_days"),
         "RPC_LIVENESS_RECHECK_SECONDS": windows.get("rpc_liveness_recheck_seconds"),
         "DEDUP_WINDOW_HOURS": windows.get("dedup_window_hours"),
+        "VERIFY_EVIDENCE_BUCKET_MINUTES": windows.get("evidence_dedup_bucket_minutes"),
     }
     for key, val in mapping.items():
         if val is not None:
@@ -397,7 +401,7 @@ def _apply_yaml_overlay(base: "AppSettings", doc: Dict[str, Any]) -> "AppSetting
     # Environment variables must still win over the YAML overlay.
     env_overrides = {
         name: getattr(base, name)
-        for name in base.model_fields
+        for name in type(base).model_fields
         if name in os.environ or name.lower() in os.environ
     }
     values.update(env_overrides)

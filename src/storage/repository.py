@@ -38,6 +38,9 @@ from src.storage.models import (
     SourceCursor,
 )
 from src.storage.object_store import object_store
+from src.config import settings
+from src.util.redaction import redact_url
+from src.util.timeutil import observed_bucket, utcnow
 
 
 class Repository:
@@ -51,31 +54,54 @@ class Repository:
     # --------------------------------------------------------------------------
 
     async def append_evidence(self, raw: RawItem, raw_payload_path: Optional[str] = None) -> EvidenceEvent:
-        """Appends a new raw evidence event to the append-only ledger or returns existing if duplicate."""
+        """Append a raw evidence event, or return the existing row on replay.
+
+        The idempotency key is ``source_id + external_id`` (spec 18). Content
+        identity is a *separate* key that also carries the observation bucket,
+        so re-seeing unchanged content in a later bucket records a genuine new
+        observation instead of being silently swallowed - freshness and
+        liveness both depend on that distinction.
+
+        URLs are redacted before storage: an RPC endpoint may embed a provider
+        API key, and evidence payloads must never carry credentials (spec 15).
+        """
+        bucket = observed_bucket(
+            raw.observed_at, minutes=settings.VERIFY_EVIDENCE_BUCKET_MINUTES
+        )
+
+        # 1. Exact replay of the same source event.
         stmt = select(EvidenceEvent).where(
             EvidenceEvent.source_id == raw.source_id,
-            or_(
-                EvidenceEvent.external_id == raw.external_id,
-                EvidenceEvent.content_hash == raw.content_hash,
-            ),
+            EvidenceEvent.external_id == raw.external_id,
         )
-        result = await self.session.execute(stmt)
-        existing = result.scalar_one_or_none()
+        existing = (await self.session.execute(stmt)).scalar_one_or_none()
         if existing:
             return existing
 
+        # 2. Same bytes already recorded within this observation bucket.
+        stmt = select(EvidenceEvent).where(
+            EvidenceEvent.source_id == raw.source_id,
+            EvidenceEvent.content_hash == raw.content_hash,
+            EvidenceEvent.observed_bucket == bucket,
+        )
+        existing = (await self.session.execute(stmt)).scalar_one_or_none()
+        if existing:
+            return existing
+
+        provenance = raw.provenance or {}
         evidence = EvidenceEvent(
             source_id=raw.source_id,
             external_id=raw.external_id,
-            url=raw.url,
+            url=redact_url(raw.url),
             source_family=raw.source_family,
             observed_at=raw.observed_at,
             published_at=raw.published_at,
             content_hash=raw.content_hash,
+            observed_bucket=bucket,
             raw_payload_path=raw_payload_path,
-            extracted_claims=raw.provenance or {},
-            reliability=raw.provenance.get("reliability", 0.85),
-            parser_version=raw.provenance.get("parser_version", "1.0.0"),
+            extracted_claims=provenance,
+            reliability=provenance.get("reliability", 0.85),
+            parser_version=provenance.get("parser_version", "1.0.0"),
         )
         self.session.add(evidence)
         await self.session.flush()

@@ -284,6 +284,7 @@ class SafeHttpClient:
         read_timeout: Optional[float] = None,
         max_response_bytes: Optional[int] = None,
         max_redirects: Optional[int] = None,
+        transport: Optional[httpx.AsyncBaseTransport] = None,
     ) -> None:
         cfg = settings.VERIFY
         self.connect_timeout = connect_timeout if connect_timeout is not None else cfg.connect_timeout_seconds
@@ -293,6 +294,9 @@ class SafeHttpClient:
         )
         self.max_redirects = max_redirects if max_redirects is not None else cfg.max_redirects
         self._limiters: Dict[str, _DomainLimiter] = {}
+        # Injectable for tests. Validation, pinning and caps still apply, so a
+        # test transport exercises policy rather than bypassing it.
+        self._transport = transport
 
     # -- internals ---------------------------------------------------------
     def _limiter(self, hostname: str) -> _DomainLimiter:
@@ -359,6 +363,7 @@ class SafeHttpClient:
                 follow_redirects=False,   # every hop is validated by hand
                 trust_env=False,          # ignore proxy env vars on this path
                 cookies=None,             # never carry cookies or credentials
+                transport=self._transport,
             ) as client:
                 request = client.build_request(
                     method,

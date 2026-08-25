@@ -3,10 +3,10 @@ requires = ["setuptools>=61.0"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "ashinity-early-chain-discovery"
+name = "chainradar"
 version = "1.0.0"
-description = "Early Chain Discovery and Africa Expansion Intelligence Engine"
-authors = [{ name = "Ashinity Intelligence Team" }]
+description = "ChainRadar - Early Chain Discovery and Africa Expansion Intelligence Engine"
+authors = [{ name = "ChainRadar Intelligence Team" }]
 readme = "README.md"
 requires-python = ">=3.12"
 dependencies = [
@@ -30,7 +30,10 @@ dependencies = [
 ]
 
 [project.scripts]
-ashinity = "src.cli.main:app"
+chainradar = "src.cli.main:app"
+
+[tool.setuptools]
+packages = ["src", "src.storage", "src.core", "src.collectors", "src.collectors.registries", "src.collectors.github", "src.collectors.web_news", "src.collectors.ats", "src.collectors.social", "src.verifier", "src.verifier.adapters", "src.classifiers", "src.scoring", "src.alerting", "src.scheduler", "src.compliance", "src.api", "src.api.routes", "src.backtesting", "src.cli"]
 
 [tool.pytest.ini_options]
 minversion = "7.0"
