@@ -29,7 +29,7 @@ def get_wat_time_str() -> str:
 def make_header_layout() -> Panel:
     wat_time = get_wat_time_str()
     header_text = Text()
-    header_text.append("⚡ ASHINITY INTELLIGENCE ENGINE  ", style="bold cyan")
+    header_text.append("⚡ CHAINRADAR INTELLIGENCE ENGINE  ", style="bold cyan")
     header_text.append("│  Early Chain Discovery & Africa Expansion  │  ", style="dim white")
     header_text.append(f"🕒 {wat_time}", style="bold green")
 
@@ -138,7 +138,7 @@ async def run_tui():
             layout["main"]["sources"].update(Panel(make_source_health_table(), border_style="dim"))
             layout["footer"].update(
                 Panel(
-                    Align.center(Text("Press Ctrl+C to exit  │  Run 'ashinity report generate' for daily digest", style="dim italic")),
+                    Align.center(Text("Press Ctrl+C to exit  │  Run 'chainradar report generate' for daily digest", style="dim italic")),
                     border_style="dim",
                 )
             )

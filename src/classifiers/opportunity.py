@@ -52,7 +52,7 @@ OPPORTUNITY_PATTERNS = [
 
 
 class OpportunityClassifier:
-    """Classifies opportunities and pairs them with recommended Ashinity responses."""
+    """Classifies opportunities and pairs them with recommended ChainRadar responses."""
 
     @staticmethod
     def classify(text: str) -> List[Tuple[OpportunityType, str, str]]:

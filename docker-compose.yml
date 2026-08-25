@@ -43,6 +43,61 @@ services:
       timeout: 3s
       retries: 20
 
+  # ---------------------------------------------------------------------
+  # Application services.
+  #
+  # Started only with `--profile app`, so the default `docker compose up -d`
+  # brings up just the datastores for local development against the host
+  # Python environment.
+  # ---------------------------------------------------------------------
+  migrate:
+    profiles: ["app"]
+    build: .
+    container_name: ecd-migrate
+    command: ["alembic", "upgrade", "head"]
+    environment:
+      DATABASE_URL: postgresql+asyncpg://ecd:ecd_dev_password@postgres:5432/ecd
+    depends_on:
+      postgres:
+        condition: service_healthy
+    restart: "no"
+
+  api:
+    profiles: ["app"]
+    build: .
+    container_name: ecd-api
+    command: ["uvicorn", "src.api.main:app", "--host", "0.0.0.0", "--port", "8000"]
+    environment:
+      DATABASE_URL: postgresql+asyncpg://ecd:ecd_dev_password@postgres:5432/ecd
+      REDIS_URL: redis://redis:6379/0
+      OBJECT_STORE_PATH: /app/data/raw_evidence
+      CORS_ALLOWED_ORIGINS: '["http://localhost:8000"]'
+    env_file:
+      - path: .env
+        required: false
+    ports:
+      - "8000:8000"
+    volumes:
+      - ecd_evidence:/app/data
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      migrate:
+        condition: service_completed_successfully
+    # The verifier fetches attacker-controlled URLs, so the container it runs
+    # in gets no more privilege than it needs (spec 15 "Isolation").
+    read_only: true
+    tmpfs:
+      - /tmp
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
+    restart: unless-stopped
+
 volumes:
   ecd_pgdata:
   ecd_redisdata:
+  ecd_evidence:

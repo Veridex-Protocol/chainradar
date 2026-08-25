@@ -37,7 +37,7 @@ class ReportGenerator:
         md_text = DigestGenerator.to_markdown(payload)
 
         result: Dict[str, Any] = {
-            "title": payload.get("title", f"Ashinity Digest ({digest_type})"),
+            "title": payload.get("title", f"ChainRadar Digest ({digest_type})"),
             "digest_type": digest_type,
             "markdown": md_text,
             "payload": payload,

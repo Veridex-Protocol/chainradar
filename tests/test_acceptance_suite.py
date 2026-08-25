@@ -145,9 +145,52 @@ async def test_acceptance_4_evm_verify_liveness():
 
 # 5. Test Collision (Same Chain ID, Different Genesis)
 @pytest.mark.asyncio
-async def test_acceptance_5_collision_detection():
-    # When same chain ID is observed with a different genesis
-    risk_score, breakdown, flags = risk_evaluator.evaluate_risk(has_chain_id_collision=True)
+async def test_acceptance_5_collision_detection(test_db: AsyncSession):
+    """Pass condition: separate incarnations AND a hard risk flag.
+
+    Asserting only that the risk evaluator returns a number would pass even if
+    the resolver silently merged the two chains, so this drives the real
+    ingest path. The full matrix lives in test_resolution_and_verification.py.
+    """
+    from src.core.resolver import EntityResolver
+    from src.storage.models import ReviewTask, Signal
+
+    repo = Repository(test_db)
+    resolver = EntityResolver(test_db)
+
+    raw_a = RawItem(source_id="ethereum_lists", external_id="acc5-a", url="https://x.invalid/a",
+                    source_family="registry", raw_payload={}, content_hash="acc5-a")
+    ev_a = await repo.append_evidence(raw_a)
+    first, _ = await resolver.upsert_candidate(
+        RawObservation(candidate_name="Acc5 Alpha", organization_domains=["acc5alpha.dev"],
+                       stack_family=StackFamily.EVM, human_chain_id="5150",
+                       genesis_fingerprint="0xaaa"),
+        ev_a.id,
+    )
+
+    raw_b = RawItem(source_id="chainid_network", external_id="acc5-b", url="https://x.invalid/b",
+                    source_family="registry", raw_payload={}, content_hash="acc5-b")
+    ev_b = await repo.append_evidence(raw_b)
+    second, _ = await resolver.upsert_candidate(
+        RawObservation(candidate_name="Acc5 Beta", organization_domains=["acc5beta.dev"],
+                       stack_family=StackFamily.EVM, human_chain_id="5150",
+                       genesis_fingerprint="0xbbb"),
+        ev_b.id,
+    )
+
+    assert first.id != second.id, "a chain-ID collision must not merge two projects"
+
+    tasks = (await test_db.execute(
+        select(ReviewTask).where(ReviewTask.task_type == "chain_id_collision")
+    )).scalars().all()
+    assert tasks, "collision must open an analyst review task"
+
+    signals = (await test_db.execute(
+        select(Signal).where(Signal.signal_type == "chain_id_collision")
+    )).scalars().all()
+    assert signals, "collision must raise a risk signal"
+
+    risk_score, _breakdown, flags = risk_evaluator.evaluate_risk(has_chain_id_collision=True)
     assert risk_score >= 30.0
     assert "Identity mismatch or unexplained chain-ID collision" in flags
 

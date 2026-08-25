@@ -135,6 +135,30 @@ class OutreachGateConfig(BaseModel):
     allow_technical_verified_override: bool = True
 
 
+class VitalityConfig(BaseModel):
+    """Thresholds for the alive/dead assessment (spec 01 dormant gate)."""
+
+    # Days since the most recent observed activity on any channel.
+    thresholds_days: Dict[str, int] = Field(
+        default_factory=lambda: {"active": 30, "slowing": 90, "dormant": 180}
+    )
+    freshness_half_life_days: float = 45.0
+    # A candidate at or below this vitality score is treated as dormant for
+    # promotion purposes, regardless of how good its other scores look.
+    dormant_score_max: float = 25.0
+
+
+class FundingConfig(BaseModel):
+    """Funding extraction policy (spec 13 'capital')."""
+
+    # Round sizes that meaningfully change an organization's ability to fund a
+    # regional programme. Used for banding, never for inference.
+    material_raise_usd: float = 2_000_000.0
+    strong_raise_usd: float = 15_000_000.0
+    # Only these currencies are converted; anything else is stored as published.
+    supported_currencies: List[str] = Field(default_factory=lambda: ["USD"])
+
+
 class AppSettings(BaseSettings):
     model_config = SettingsConfigDict(
         env_file=".env",
@@ -189,6 +213,15 @@ class AppSettings(BaseSettings):
     HUMAN_APPROVAL_BEFORE_OUTREACH: bool = True
     # Kill switch for all outbound verification traffic during an incident.
     VERIFIER_ENABLED: bool = True
+    # Probe endpoints during ingest. Off by default: verification is queued and
+    # drained by the scheduler so a large registry snapshot is not serialized
+    # behind RPC timeouts (spec 18/19).
+    VERIFY_INLINE: bool = False
+    # Rows per mid-batch commit; bounds lock duration on large snapshots.
+    INGEST_COMMIT_EVERY: int = 25
+    # Candidates probed per verification tick.
+    VERIFY_BATCH_SIZE: int = 20
+    CORS_ALLOWED_ORIGINS: List[str] = Field(default_factory=lambda: ["http://localhost:8000"])
     # A1/A2 require project-origin evidence; see spec 11 wording rule.
     africa_requires_evidence_for_explicit_intent: bool = True
     AFRICA_PRIORITY_MARKETS: List[str] = Field(
@@ -202,6 +235,8 @@ class AppSettings(BaseSettings):
     FRESHNESS: FreshnessConfig = Field(default_factory=FreshnessConfig)
     STALENESS: StalenessConfig = Field(default_factory=StalenessConfig)
     OUTREACH_GATE: OutreachGateConfig = Field(default_factory=OutreachGateConfig)
+    VITALITY: VitalityConfig = Field(default_factory=VitalityConfig)
+    FUNDING: FundingConfig = Field(default_factory=FundingConfig)
     # Derived hash of the YAML config; stamped onto every score snapshot so a
     # threshold change is visible in the audit trail (spec 20 rule versioning).
     RULE_VERSION: str = "v1.0"
@@ -407,6 +442,8 @@ def _apply_yaml_overlay(base: "AppSettings", doc: Dict[str, Any]) -> "AppSetting
         ("FRESHNESS", "freshness"),
         ("STALENESS", "staleness"),
         ("OUTREACH_GATE", "outreach_gate"),
+        ("VITALITY", "vitality"),
+        ("FUNDING", "funding"),
     ):
         if doc.get(section):
             values[key] = _deep_merge(values.get(key) or {}, doc[section])

@@ -81,15 +81,31 @@ TOKEN_ONLY_TEXT = """
 Buy SuperMoon Token on Uniswap! 100x potential ERC-20 meme coin with zero tax and liquidity locked. No chain, just tokenomics.
 """
 
-# Positive and Negative Corpus for Backtesting
+# Positive and Negative Corpus for Backtesting (spec 24)
+#
+# Each fixture carries the *evidence* the engine would have seen, not a
+# pre-baked score, so the backtest can replay it through the real scoring
+# engine. `events` are (source_family, days_before_signal_end) pairs.
+
 POSITIVE_CORPUS = [
     {
         "name": f"KnownChain_{i}",
-        "first_eligible_signal": f"2026-01-{(i%28)+1:02d}T00:00:00Z",
-        "mainnet_live_at": f"2026-06-{(i%28)+1:02d}T00:00:00Z",
-        "sample_text": f"KnownChain_{i} public testnet and developer grants for Africa expansion in Nigeria (Lagos)." if i % 2 == 0 else f"KnownChain_{i} Layer 2 mainnet beta announcement.",
+        "first_eligible_signal": f"2026-01-{(i % 28) + 1:02d}T00:00:00Z",
+        "mainnet_live_at": f"2026-06-{(i % 28) + 1:02d}T00:00:00Z",
+        "sample_text": (
+            f"KnownChain_{i} public testnet and developer grants for Africa "
+            f"expansion in Nigeria (Lagos)."
+            if i % 2 == 0
+            else f"KnownChain_{i} Layer 2 remittance and stablecoin payments mainnet beta announcement."
+        ),
         "expected_africa_label": "A1_explicit_intent" if i % 2 == 0 else "A3_africa_compatible",
         "verified_genesis": True,
+        "official_domains": [f"knownchain{i}.network"],
+        "github_orgs": [f"knownchain{i}"],
+        "stage": "S2_public_testnet" if i % 2 == 0 else "S4_mainnet_announced",
+        "chain_id": str(70000 + i),
+        # A real project leaves traces in several independent source families.
+        "events": [("registry", 0), ("official_web", 2), ("code_search", 5), ("careers", 9)],
     }
     for i in range(1, 51)
 ]
@@ -97,9 +113,15 @@ POSITIVE_CORPUS = [
 NEGATIVE_CORPUS = [
     {
         "name": f"MemeToken_{i}",
-        "first_eligible_signal": f"2026-02-{(i%28)+1:02d}T00:00:00Z",
+        "first_eligible_signal": f"2026-02-{(i % 28) + 1:02d}T00:00:00Z",
         "is_token_only": True,
         "sample_text": f"MemeToken_{i} presale on PancakeSwap, token contract 0x12345.",
+        "official_domains": [],
+        "github_orgs": [],
+        "stage": "S0_research_hint",
+        "chain_id": None,
+        # Token launches are loud on social and silent everywhere that matters.
+        "events": [("social", 0), ("market", 1)],
     }
     for i in range(1, 151)
 ]

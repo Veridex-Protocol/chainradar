@@ -347,7 +347,7 @@ class SafeHttpClient:
         request_headers: Dict[str, str] = {
             "Host": target.host_header,
             "Accept-Encoding": "gzip, deflate",
-            "User-Agent": "AshinityECD/1.0 (+market-intelligence; read-only)",
+            "User-Agent": "ChainRadarECD/1.0 (+market-intelligence; read-only)",
         }
         if headers:
             request_headers.update(headers)

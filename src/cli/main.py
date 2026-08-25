@@ -23,8 +23,8 @@ from src.verifier.engine import verifier_engine
 from src.verifier.safe_url import SafeURLValidator
 
 app = typer.Typer(
-    name="ashinity",
-    help="Ashinity Early Chain Discovery & Africa Expansion Intelligence Engine CLI",
+    name="chainradar",
+    help="ChainRadar Early Chain Discovery & Africa Expansion Intelligence Engine CLI",
     add_completion=False,
 )
 report_app = typer.Typer(help="Generate and export intelligence briefs and candidate datasets.")
@@ -36,7 +36,7 @@ console = Console()
 @app.command()
 def tui():
     """Launch the interactive live Terminal UI monitoring dashboard."""
-    console.print("[bold cyan]Starting Ashinity Live Terminal UI...[/bold cyan]")
+    console.print("[bold cyan]Starting ChainRadar Live Terminal UI...[/bold cyan]")
     try:
         asyncio.run(run_tui())
     except KeyboardInterrupt:
@@ -50,7 +50,7 @@ def daemon(
 ):
     """Run the engine in the background as a continuous discovery & reporting daemon."""
     console.print(Panel(
-        f"[bold green]Ashinity Background Intelligence Daemon Running[/bold green]\n"
+        f"[bold green]ChainRadar Background Intelligence Daemon Running[/bold green]\n"
         f"• Polling cadence: Every {interval_minutes} minutes\n"
         f"• Scheduled reporting: {'Active (07:30 & 18:00 WAT)' if reports_enabled else 'Disabled'}\n"
         f"• Reports directory: [cyan]./reports/[/cyan]\n"
@@ -60,7 +60,7 @@ def daemon(
     ))
 
     async def _daemon_loop():
-        await db_manager.init_db()
+        await db_manager.verify_schema_is_current()
         while True:
             now_utc = datetime.now(timezone.utc)
             wat_hour = (now_utc.hour + 1) % 24
@@ -68,14 +68,17 @@ def daemon(
 
             console.print(f"[dim]{now_utc.isoformat()} UTC ({wat_hour:02d}:{wat_min:02d} WAT)[/dim] Running scheduled discovery cycle...")
 
-            # 1. Run Registry Collector batch
-            async with db_manager.session() as session:
-                pipeline = IntelligencePipeline(session)
-                try:
-                    count = await pipeline.run_collector_batch(EthereumListsCollector())
-                    console.print(f"[green]✓ Processed {count} items from ethereum-lists[/green]")
-                except Exception as e:
-                    console.print(f"[red]✗ Collector cycle error: {e}[/red]")
+            # 1. Run Registry Collector batch in its own retried transaction.
+            async def _cycle(session):
+                return await IntelligencePipeline(session).run_collector_batch(
+                    EthereumListsCollector()
+                )
+
+            try:
+                count = await db_manager.run_in_session(_cycle)
+                console.print(f"[green]✓ Processed {count} items from ethereum-lists[/green]")
+            except Exception as e:
+                console.print(f"[red]✗ Collector cycle error: {e}[/red]")
 
             # 2. Check Scheduled Report Times (07:30 WAT & 18:00 WAT)
             if reports_enabled and wat_min < interval_minutes:
@@ -216,21 +219,70 @@ def run_scan(
 
     async def _scan():
         await db_manager.init_db()
-        async with db_manager.session() as session:
-            pipeline = IntelligencePipeline(session)
-            target_collectors = list(collectors_map.values()) if source == "all" else [collectors_map[source]]
 
-            total_items = 0
-            for col in target_collectors:
-                console.print(f"📡 Fetching live data from [cyan]{col.source_id}[/cyan]...")
-                try:
-                    count = await pipeline.run_collector_batch(col)
-                    console.print(f"[bold green]✓ {col.source_id}:[/bold green] Processed {count} real items")
-                    total_items += count
-                except Exception as e:
-                    console.print(f"[bold red]✗ {col.source_id} error:[/bold red] {e}")
+        target_collectors = (
+            list(collectors_map.values()) if source == "all" else [collectors_map[source]]
+        )
 
-            console.print(f"\n[bold green]Scan complete! Total real items processed: {total_items}[/bold green]")
+        total_items = 0
+        total_failed = 0
+        for col in target_collectors:
+            console.print(f"📡 Fetching live data from [cyan]{col.source_id}[/cyan]...")
+            try:
+                # Step 1: Read cursor in its own short session
+                async with db_manager.session() as session:
+                    repo = Repository(session)
+                    cursor_record = await repo.get_cursor(col.source_id)
+                    from src.core.types import Cursor, RateBudget
+                    cursor = Cursor(
+                        source_id=col.source_id,
+                        etag=cursor_record.etag if cursor_record else None,
+                        last_modified=cursor_record.last_modified if cursor_record else None,
+                        cursor_token=cursor_record.cursor if cursor_record else None,
+                        last_seen_sha=cursor_record.safe_sha if cursor_record else None,
+                    )
+
+                # Step 2: Fetch items from the network (no DB held)
+                budget = RateBudget(remaining_requests=60)
+                batch = await col.fetch(cursor, budget)
+                console.print(f"  [dim]Received {len(batch.items)} items from {col.source_id}[/dim]")
+
+                # Step 3: Process each item in its own session with deadlock retry
+                succeeded = 0
+                failed = 0
+                for raw_item in batch.items:
+                    async def _process_one(session, _item=raw_item, _col=col):
+                        pipeline = IntelligencePipeline(session)
+                        await pipeline.process_raw_item(_col, _item)
+
+                    try:
+                        await db_manager.run_in_session(_process_one)
+                        succeeded += 1
+                    except Exception as item_exc:
+                        failed += 1
+                        console.print(f"  [dim red]✗ Failed: {str(item_exc)[:100]}[/dim red]")
+
+                # Step 4: Save cursor after all items processed
+                next_cursor = col.next_cursor(batch)
+                async with db_manager.session() as session:
+                    repo = Repository(session)
+                    await repo.save_cursor(
+                        source_id=col.source_id,
+                        etag=next_cursor.etag,
+                        last_modified=next_cursor.last_modified,
+                        cursor=next_cursor.cursor_token,
+                        safe_sha=next_cursor.last_seen_sha,
+                        is_success=True,
+                    )
+
+                console.print(f"[bold green]✓ {col.source_id}:[/bold green] {succeeded} processed, {failed} failed")
+                total_items += succeeded
+                total_failed += failed
+            except Exception as exc:
+                console.print(f"[bold red]✗ {col.source_id} fetch error:[/bold red] {exc}")
+
+        result_color = "green" if total_failed == 0 else "yellow"
+        console.print(f"\n[bold {result_color}]Scan complete! {total_items} processed, {total_failed} failed.[/bold {result_color}]")
 
     asyncio.run(_scan())
 

@@ -191,11 +191,18 @@ class EntityResolver:
                 self._merge_org_identifiers(org, domains, github_orgs, obs)
                 return org
 
-        # 3. No strong identifier: create a distinct organization. The key uses
-        #    the *full* normalized name, not the suffix-stripped form, so that
-        #    "Kora Network" and "Kora Labs" do not silently become one entity
-        #    on a 0.40-weight name match.
-        org_id = stable_uuid("org", slugify(norm_name) or slugify(display_name))
+        # 3. No existing match. Key the new organization on the strongest
+        #    identifier it actually has. Keying on the name would merge two
+        #    unrelated organizations that happen to share one - exactly the
+        #    0.40-weight auto-merge spec 16 forbids - so the name is only a
+        #    last resort, used when nothing better was observed.
+        if domains:
+            org_key = ("domain", sorted(domains)[0])
+        elif github_orgs:
+            org_key = ("github", sorted(github_orgs)[0])
+        else:
+            org_key = ("name", slugify(norm_name) or slugify(display_name))
+        org_id = stable_uuid("org", *org_key)
         stmt = select(Organization).where(Organization.org_id == org_id)
         existing = (await self.session.execute(stmt)).scalar_one_or_none()
         if existing:

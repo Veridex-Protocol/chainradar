@@ -25,7 +25,7 @@ class DigestGenerator:
         radar_candidates = await repo.list_candidates(state="RADAR", limit=20)
 
         now = datetime.now(timezone.utc)
-        title = f"Ashinity Early Chain Digest - {digest_type.upper()} ({now.strftime('%Y-%m-%d %H:%M UTC')})"
+        title = f"ChainRadar Early Chain Digest - {digest_type.upper()} ({now.strftime('%Y-%m-%d %H:%M UTC')})"
 
         hot_cards = []
         for c in hot_candidates:

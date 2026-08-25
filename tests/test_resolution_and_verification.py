@@ -121,8 +121,33 @@ async def test_repeated_collision_does_not_spawn_duplicate_tasks(test_db):
     tasks = (
         await test_db.execute(select(ReviewTask).where(ReviewTask.task_type == "chain_id_collision"))
     ).scalars().all()
+    # Once the second candidate exists, later observations resolve straight to
+    # it, so the collision is recorded exactly once rather than on every poll.
     assert len(tasks) == 1, f"expected one open task, got {len(tasks)}"
-    assert len(tasks[0].evidence_refs) >= 2, "repeat observations attach to the existing task"
+    assert tasks[0].status == "open"
+
+
+@pytest.mark.asyncio
+async def test_open_review_task_is_idempotent_and_accumulates_evidence(test_db):
+    """Re-raising the same task merges evidence instead of duplicating the row."""
+    resolver = EntityResolver(test_db)
+    first = await resolver.open_review_task(
+        "identity_mismatch", reason="endpoint served a different chain ID",
+        candidate_id=None, evidence_refs=["ev-1"],
+    )
+    second = await resolver.open_review_task(
+        "identity_mismatch", reason="endpoint served a different chain ID again",
+        candidate_id=None, evidence_refs=["ev-2"],
+    )
+    assert first.id == second.id
+    assert set(second.evidence_refs) == {"ev-1", "ev-2"}
+
+    rows = (
+        await test_db.execute(
+            select(ReviewTask).where(ReviewTask.task_type == "identity_mismatch")
+        )
+    ).scalars().all()
+    assert len(rows) == 1
 
 
 # --------------------------------------------------------------------------

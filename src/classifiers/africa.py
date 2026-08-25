@@ -3,7 +3,7 @@
 Two rules shape this module.
 
 *Explicit intent is not inferred fit.* A1/A2 describe what the project itself
-said or did; A3 is an Ashinity hypothesis about suitability. The two are scored
+said or did; A3 is an ChainRadar hypothesis about suitability. The two are scored
 from different evidence and can never be produced by the same code path, so the
 engine cannot quietly upgrade "this chain would suit Nigeria" into "this chain
 is going to Nigeria".
@@ -19,6 +19,7 @@ from __future__ import annotations
 import re
 import unicodedata
 from dataclasses import dataclass, field
+from functools import lru_cache
 from typing import Any, Dict, Iterable, List, Optional, Sequence, Set, Tuple
 
 from src.config import lexicons, settings
@@ -34,6 +35,7 @@ _PAN_AFRICA = re.compile(
 )
 
 
+@lru_cache(maxsize=8192)
 def _strip_diacritics(value: str) -> str:
     decomposed = unicodedata.normalize("NFD", value or "")
     return "".join(ch for ch in decomposed if unicodedata.category(ch) != "Mn")
@@ -44,6 +46,7 @@ def _normalize(text: str) -> str:
     return unicodedata.normalize("NFKC", text or "").casefold()
 
 
+@lru_cache(maxsize=8192)
 def _term_pattern(term: str) -> re.Pattern:
     """Word-boundary matcher tolerant of internal whitespace runs."""
     escaped = r"\s+".join(re.escape(part) for part in term.split())

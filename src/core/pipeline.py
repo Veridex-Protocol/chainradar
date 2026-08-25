@@ -263,6 +263,15 @@ class IntelligencePipeline:
         if not settings.VERIFIER_ENABLED:
             return outcome
 
+        if not settings.VERIFY_INLINE:
+            # Verification is queued, not run inside the collector loop
+            # (spec 19's processing loop enqueues `verify_candidate`).
+            # Probing inline serializes an entire registry snapshot behind
+            # thousands of RPC timeouts and holds the ingest transaction open
+            # for the duration; the scheduler drains the queue instead.
+            outcome["queued"] = True
+            return outcome
+
         for network in candidate.networks or []:
             for endpoint in list(network.rpc_urls)[:2]:
                 result, observation = await self.verification.probe_and_record(
@@ -480,9 +489,16 @@ class IntelligencePipeline:
             raise
 
         processed = 0
+        commit_every = max(1, settings.INGEST_COMMIT_EVERY)
         for raw_item in batch.items:
             await self.process_raw_item(collector, raw_item)
             processed += 1
+            if processed % commit_every == 0:
+                # Checkpoint mid-batch. A registry snapshot can carry thousands
+                # of chains; holding one transaction across all of them keeps
+                # row locks for minutes and makes any failure lose the whole
+                # batch. Committing in chunks bounds both.
+                await self.session.commit()
 
         next_cursor = collector.next_cursor(batch)
         await self.repo.save_cursor(

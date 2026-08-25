@@ -32,7 +32,7 @@ class HyperlaneRegistryCollector:
     async def fetch(self, cursor: Cursor, budget: RateBudget) -> FetchBatch:
         headers = {
             "Accept": "application/vnd.github.v3+json",
-            "User-Agent": "AshinityEarlyChainDiscovery/1.0",
+            "User-Agent": "ChainRadarDiscovery/1.0",
         }
         if settings.GITHUB_TOKEN:
             headers["Authorization"] = f"token {settings.GITHUB_TOKEN}"

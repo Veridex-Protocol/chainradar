@@ -1,6 +1,6 @@
 # Compliance, Platform Terms, and Ethical Boundaries
 
-This document defines the data privacy and regulatory compliance framework for the Ashinity Early Chain Discovery Engine.
+This document defines the data privacy and regulatory compliance framework for the ChainRadar Early Chain Discovery Engine.
 
 ---
 

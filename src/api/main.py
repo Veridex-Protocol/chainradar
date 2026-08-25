@@ -1,4 +1,4 @@
-"""FastAPI Application Entrypoint for Ashinity Early Chain Discovery & Africa Intelligence Engine."""
+"""FastAPI Application Entrypoint for ChainRadar Engine"""
 
 from __future__ import annotations
 
@@ -10,7 +10,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse, HTMLResponse
 from fastapi.staticfiles import StaticFiles
 
-from src.api.routes import analytics, candidates, digests, evidence, sources
+from src.api.routes import analytics, candidates, digests, evidence, review, sources
 from src.config import settings
 from src.scheduler.cadence import cadence_scheduler
 from src.storage.database import db_manager
@@ -19,14 +19,15 @@ logging.basicConfig(
     level=getattr(logging, settings.LOG_LEVEL.upper(), logging.INFO),
     format="%(asctime)s [%(levelname)s] %(name)s: %(message)s",
 )
-logger = logging.getLogger("ashinity.engine")
+logger = logging.getLogger("chainradar.engine")
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    # Startup
-    logger.info("Initializing Ashinity Intelligence Engine database & tables...")
-    await db_manager.init_db()
+    # Startup. The schema is owned by Alembic, not by the application:
+    # calling create_all() here would silently diverge a running instance from
+    # the migration history and mask a missed `alembic upgrade`.
+    await db_manager.verify_schema_is_current()
     
     logger.info("Starting CadenceScheduler...")
     await cadence_scheduler.start()
@@ -40,7 +41,7 @@ async def lifespan(app: FastAPI):
 
 
 app = FastAPI(
-    title="Ashinity Early Chain Discovery & Africa Expansion Intelligence Engine",
+    title="ChainRadar Early Chain Discovery & Africa Expansion Intelligence Engine",
     description="Production-ready, evidence-first intelligence engine discovering public blockchains before or shortly after mainnet.",
     version="1.0.0",
     lifespan=lifespan,
@@ -48,10 +49,13 @@ app = FastAPI(
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    # Wildcard origins combined with credentials is rejected by browsers and
+    # would expose an internal analyst tool to any site. Configure the real
+    # origins for a deployment via CORS_ALLOWED_ORIGINS.
+    allow_origins=settings.CORS_ALLOWED_ORIGINS,
     allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
+    allow_methods=["GET", "POST"],
+    allow_headers=["Authorization", "Content-Type"],
 )
 
 # API Routers
@@ -60,6 +64,7 @@ app.include_router(evidence.router, prefix="/api")
 app.include_router(sources.router, prefix="/api")
 app.include_router(digests.router, prefix="/api")
 app.include_router(analytics.router, prefix="/api")
+app.include_router(review.router, prefix="/api")
 
 
 # UI Directory Setup
@@ -75,7 +80,7 @@ async def serve_ui():
     if index_file.exists():
         with open(index_file, "r", encoding="utf-8") as f:
             return HTMLResponse(content=f.read())
-    return HTMLResponse("<h2>Ashinity Early Chain Discovery Engine API Running</h2><p>Visit <a href='/docs'>/docs</a> for API specifications.</p>")
+    return HTMLResponse("<h2>ChainRadar Early Chain Discovery Engine API Running</h2><p>Visit <a href='/docs'>/docs</a> for API specifications.</p>")
 
 
 @app.get("/health")

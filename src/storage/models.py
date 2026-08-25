@@ -98,7 +98,9 @@ class ChainProduct(Base):
     id: Mapped[str] = mapped_column(String(64), primary_key=True, default=generate_uuid)
     organization_id: Mapped[Optional[str]] = mapped_column(String(64), ForeignKey("organizations.org_id"), index=True, nullable=True)
     canonical_name: Mapped[str] = mapped_column(String(255), nullable=False, index=True)
-    slug: Mapped[str] = mapped_column(String(255), unique=True, index=True, nullable=False)
+    # Unique per organization, not globally: spec 04 keys a chain product on
+    # (org_id, slug), so two organizations may each run a "meridian" chain.
+    slug: Mapped[str] = mapped_column(String(255), index=True, nullable=False)
     aliases: Mapped[List[str]] = mapped_column(JSONType, default=list, nullable=False)
     purpose_labels: Mapped[List[str]] = mapped_column(JSONType, default=list, nullable=False)
     stack_family: Mapped[str] = mapped_column(String(64), default="evm", index=True, nullable=False)
@@ -125,6 +127,10 @@ class ChainProduct(Base):
     last_verified_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utc_now, nullable=False)
     updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utc_now, onupdate=utc_now, nullable=False)
+
+    __table_args__ = (
+        UniqueConstraint("organization_id", "slug", name="uq_chain_org_slug"),
+    )
 
     organization = relationship("Organization", back_populates="chains", lazy="selectin")
     networks = relationship("Network", back_populates="chain_product", cascade="all, delete-orphan", lazy="selectin")
@@ -455,4 +461,109 @@ class AlertDispatch(Base):
 
     __table_args__ = (
         Index("ix_alert_candidate_dispatched", "candidate_id", "dispatched_at"),
+    )
+
+
+class ActivitySnapshot(Base):
+    """Last-observed activity on one public channel for a candidate.
+
+    Answers "is this chain still alive?" from the places a living project
+    inevitably leaves traces: the chain itself, its repositories, its official
+    site and its public social accounts. Each row is one observation of one
+    channel, so a decaying project shows up as a widening gap between
+    `observed_at` and `last_activity_at` rather than as a missing record.
+
+    Metrics are stored as observed, never estimated. A channel we could not
+    read is absent, which is different from a channel that is quiet.
+    """
+
+    __tablename__ = "activity_snapshots"
+
+    id: Mapped[str] = mapped_column(String(64), primary_key=True, default=generate_uuid)
+    candidate_id: Mapped[str] = mapped_column(
+        String(64), ForeignKey("chain_products.id"), index=True, nullable=False
+    )
+    org_id: Mapped[Optional[str]] = mapped_column(
+        String(64), ForeignKey("organizations.org_id"), index=True, nullable=True
+    )
+    # github | explorer | rpc | website | blog | x | farcaster | bluesky | discord | telegram
+    channel: Mapped[str] = mapped_column(String(32), index=True, nullable=False)
+    # Public handle or URL, redacted before storage.
+    channel_ref: Mapped[Optional[str]] = mapped_column(String(512), nullable=True)
+
+    # The single most important field: when this channel last did anything.
+    last_activity_at: Mapped[Optional[datetime]] = mapped_column(
+        DateTime(timezone=True), index=True, nullable=True
+    )
+    last_activity_kind: Mapped[Optional[str]] = mapped_column(String(64), nullable=True)
+
+    # Audience and engineering-throughput counters, as observed.
+    followers: Mapped[Optional[int]] = mapped_column(Integer, nullable=True)
+    stars: Mapped[Optional[int]] = mapped_column(Integer, nullable=True)
+    forks: Mapped[Optional[int]] = mapped_column(Integer, nullable=True)
+    contributors: Mapped[Optional[int]] = mapped_column(Integer, nullable=True)
+    commits_last_30d: Mapped[Optional[int]] = mapped_column(Integer, nullable=True)
+    releases_last_90d: Mapped[Optional[int]] = mapped_column(Integer, nullable=True)
+    posts_last_30d: Mapped[Optional[int]] = mapped_column(Integer, nullable=True)
+    open_issues: Mapped[Optional[int]] = mapped_column(Integer, nullable=True)
+    # Chain-side throughput where an explorer or RPC exposes it.
+    block_height: Mapped[Optional[int]] = mapped_column(Integer, nullable=True)
+
+    extra_metrics: Mapped[Dict[str, Any]] = mapped_column(JSONType, default=dict, nullable=False)
+    evidence_id: Mapped[Optional[str]] = mapped_column(String(64), nullable=True)
+    observed_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), default=utc_now, index=True, nullable=False
+    )
+
+    __table_args__ = (
+        Index("ix_activity_candidate_channel", "candidate_id", "channel", "observed_at"),
+    )
+
+
+class FundingRound(Base):
+    """A publicly announced funding event (spec 13 'capital').
+
+    Recorded only from an explicit public statement. The engine never infers
+    that a project raised money, never estimates an undisclosed amount, and
+    never treats an investment as evidence of acquisition interest - spec 13 is
+    explicit that M&A requires a stated formal process.
+    """
+
+    __tablename__ = "funding_rounds"
+
+    id: Mapped[str] = mapped_column(String(64), primary_key=True, default=generate_uuid)
+    candidate_id: Mapped[Optional[str]] = mapped_column(
+        String(64), ForeignKey("chain_products.id"), index=True, nullable=True
+    )
+    org_id: Mapped[Optional[str]] = mapped_column(
+        String(64), ForeignKey("organizations.org_id"), index=True, nullable=True
+    )
+    # pre_seed | seed | series_a.. | strategic | grant | ecosystem_fund | token_sale | undisclosed
+    round_type: Mapped[str] = mapped_column(String(32), index=True, nullable=False)
+    amount_usd: Mapped[Optional[float]] = mapped_column(Float, nullable=True)
+    currency: Mapped[str] = mapped_column(String(8), default="USD", nullable=False)
+    # The figure exactly as published, so an analyst can check our parsing.
+    amount_as_published: Mapped[Optional[str]] = mapped_column(String(64), nullable=True)
+    announced_at: Mapped[Optional[datetime]] = mapped_column(
+        DateTime(timezone=True), index=True, nullable=True
+    )
+    investors: Mapped[List[str]] = mapped_column(JSONType, default=list, nullable=False)
+    lead_investor: Mapped[Optional[str]] = mapped_column(String(255), nullable=True)
+    source_url: Mapped[str] = mapped_column(Text, nullable=False)
+    evidence_id: Mapped[Optional[str]] = mapped_column(String(64), nullable=True)
+    # Verbatim sentence the figure came from.
+    quote: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    confidence: Mapped[float] = mapped_column(Float, default=0.0, nullable=False)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), default=utc_now, nullable=False
+    )
+
+    __table_args__ = (
+        # One row per announced round per candidate; re-reading the same press
+        # release must not inflate the total raised.
+        UniqueConstraint(
+            "candidate_id", "round_type", "amount_as_published", "announced_at",
+            name="uq_funding_round_event",
+        ),
+        Index("ix_funding_candidate_announced", "candidate_id", "announced_at"),
     )

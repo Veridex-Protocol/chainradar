@@ -121,3 +121,19 @@ outreach_gate:
   require_official_attribution: true
   min_independent_source_families: 2
   allow_technical_verified_override: true
+
+# Alive-or-dead assessment (spec 01 dormant/abandoned gate).
+# Days since the most recent observed activity on any public channel.
+vitality:
+  thresholds_days:
+    active: 30
+    slowing: 90
+    dormant: 180
+  freshness_half_life_days: 45
+  dormant_score_max: 25
+
+# Funding extraction (spec 13 'capital'). Bands only; never inference.
+funding:
+  material_raise_usd: 2000000
+  strong_raise_usd: 15000000
+  supported_currencies: [USD]

@@ -33,7 +33,7 @@ OUTREACH_WINDOW_STAGES = {
 }
 
 # Africa labels that count as project-origin intent rather than our own
-# inference (spec 11: A3 is an Ashinity hypothesis, not a project claim).
+# inference (spec 11: A3 is an ChainRadar hypothesis, not a project claim).
 EXPLICIT_AFRICA_LABELS = {"A1_explicit_intent", "A2_active_regional_motion"}
 
 

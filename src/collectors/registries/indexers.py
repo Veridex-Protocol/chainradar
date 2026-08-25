@@ -32,7 +32,7 @@ class IndexerChangelogCollector:
     async def fetch(self, cursor: Cursor, budget: RateBudget) -> FetchBatch:
         # Example fetching Goldsky or L2BEAT scaling summary
         url = "https://api.l2beat.com/api/scaling/summary"
-        headers = {"User-Agent": "AshinityEarlyChainDiscovery/1.0"}
+        headers = {"User-Agent": "ChainRadarDiscovery/1.0"}
         items: List[RawItem] = []
 
         try:
